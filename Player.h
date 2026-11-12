@@ -21,6 +21,8 @@ public:
 	// 描画
 	void Draw()const;
 
+	void DebugGui();
+
 private:
 	PlayerState state_ = PlayerState::Normal;//初期状態
 
@@ -30,7 +32,7 @@ private:
 
 	Vector2 size_ = { 40.0f, 60.0f };// キャラクターの幅と高さ
 
-	float moveSpeed_ = 2.0f;//移動速度
+	float moveSpeed_ = 5.0f;//移動速度
 
 	int facing_ = 1;//向き 1:右 -1:左
 
@@ -40,5 +42,28 @@ private:
 
 	bool isGrounded_ = false;//地面に接地しているかどうか	
 
-};
+	float gravity_ = 0.5f;//重力加速度
 
+	float jumpPower_ = 10.0f;//ジャンプ力
+
+	float groundY_ = 600.0f;//地面のY座標(仮)
+
+	int attackTimer_ = 0;// ハンマー攻撃の経過フレーム
+
+	bool isHammerActive_ = false;// ハンマーの攻撃判定が有効か
+
+	int mouseX_ = 0;//マウスのX座標
+	int mouseY_ = 0;//マウスのY座標
+
+	bool wasLeftMouseDown_ = false;// 左クリックの前フレームの状態
+
+	bool isAiming_ = false;//照準中かどうか
+
+	int recoilTimer_ = 0;//反動の経過フレーム
+
+	
+	float recoilPowerX_ = 12.0f;// 射撃反動X
+	float recoilPowerY_ = 5.0f;// 射撃反動Y
+	int recoilDuration_ = 20;// 射撃反動強さ
+
+};
