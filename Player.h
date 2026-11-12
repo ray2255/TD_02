@@ -16,7 +16,7 @@ public:
 	void Initialize();
 
 	// 更新
-	void Update();
+	void Update(const char* keys, const char* prevKeys);
 
 	// 描画
 	void Draw()const;
