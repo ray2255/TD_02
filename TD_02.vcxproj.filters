@@ -34,6 +34,9 @@
     <ClCompile Include="Enemy.cpp">
       <Filter>KamataEngine\ソースファイル</Filter>
     </ClCompile>
+    <ClCompile Include="Cooldown.cpp">
+      <Filter>KamataEngine\ソースファイル</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="C:\KamataEngine\DirectXGame\audio\Audio.h">
@@ -124,6 +127,9 @@
       <Filter>KamataEngine\ヘッダファイル</Filter>
     </ClInclude>
     <ClInclude Include="Vector2.h">
+      <Filter>KamataEngine\ヘッダファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Cooldown.h">
       <Filter>KamataEngine\ヘッダファイル</Filter>
     </ClInclude>
   </ItemGroup>
