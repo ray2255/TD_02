@@ -1,19 +1,31 @@
 #include <Novice.h>
+#include <Windows.h>
 
 const char kWindowTitle[] = "LC1C_07_クギヤマ_ソラ_タイトル";
+
+// ゲーム内部の基準解像度
+const int kGameWidth = 1280;
+const int kGameHeight = 720;
 
 // Windowsアプリでのエントリーポイント(main関数)
 int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
+	// モニターの解像度を取得
+	int screenWidth = GetSystemMetrics(SM_CXSCREEN);
+	int screenHeight = GetSystemMetrics(SM_CYSCREEN);
+
 	// ライブラリの初期化
-	Novice::Initialize(kWindowTitle, 1280, 720);
+	Novice::Initialize(kWindowTitle, screenWidth, screenHeight);
+
+	
 
 	// キー入力結果を受け取る箱
-	char keys[256] = {0};
-	char preKeys[256] = {0};
+	char keys[256] = { 0 };
+	char preKeys[256] = { 0 };
 
 	// ウィンドウの×ボタンが押されるまでループ
 	while (Novice::ProcessMessage() == 0) {
+
 		// フレームの開始
 		Novice::BeginFrame();
 
@@ -33,6 +45,8 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 		/// ↓描画処理ここから
 		///
 
+		
+
 		///
 		/// ↑描画処理ここまで
 		///
@@ -48,5 +62,6 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 	// ライブラリの終了
 	Novice::Finalize();
+
 	return 0;
 }
