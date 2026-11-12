@@ -123,5 +123,8 @@
     <ClInclude Include="Enemy.h">
       <Filter>KamataEngine\ヘッダファイル</Filter>
     </ClInclude>
+    <ClInclude Include="Vector2.h">
+      <Filter>KamataEngine\ヘッダファイル</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
