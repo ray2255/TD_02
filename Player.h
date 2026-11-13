@@ -9,6 +9,14 @@ enum class PlayerState
 	Dead
 };
 
+struct PlayerBullet
+{
+	Vector2 position{};
+	Vector2 velocity{};
+	int life = 0;
+	bool isActive = false;
+};
+
 class Player
 {
 public:
@@ -21,7 +29,14 @@ public:
 	// 描画
 	void Draw()const;
 
+	bool IsHammerActive() const { return isHammerActive_; }
+
+	Vector2 GetHammerPosition() const { return HammerPostion_; }
+
+	Vector2 GetHammerSize() const { return HammerSize_; }
+
 	void DebugGui();
+		
 
 private:
 	PlayerState state_ = PlayerState::Normal;//初期状態
@@ -65,5 +80,21 @@ private:
 	float recoilPowerX_ = 12.0f;// 射撃反動X
 	float recoilPowerY_ = 5.0f;// 射撃反動Y
 	int recoilDuration_ = 20;// 射撃反動強さ
+
+
+	Vector2 HammerPostion_ = {};
+	Vector2 HammerSize_ = { 70.0f, 60.0f };//ハンマーの幅と高さ
+
+
+	static constexpr int kMaxBullets_ = 10;//最大弾丸
+
+	PlayerBullet bullets_[kMaxBullets_]{};
+
+	float bulletSpeed_ = 30.0f;//弾丸速度
+	int bulletLife_ = 200;//弾丸の存在時間
+
+	float airVelocity_ = 0.0f;//// 空中の横移動速度
+
+
 
 };
