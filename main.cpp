@@ -1,6 +1,9 @@
 #include <Novice.h>
 #include "Player.h"
-
+#include "TrainingDummy.h"
+#ifdef USE_IMGUI
+#include <imgui.h>
+#endif
 
 const char kWindowTitle[] = "LC1C_07_クギヤマ_ソラ_タイトル";
 
@@ -11,7 +14,11 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	Novice::Initialize(kWindowTitle, 1280, 720);
 
 	Player player;
+	TrainingDummy trainingDummy;
+	bool isTrainingDummyActive = false;
 	player.Initialize();
+	trainingDummy.Initialize({ 800.0f, 440.0f });
+
 
 	// キー入力結果を受け取る箱
 	char keys[256] = {0};
@@ -32,9 +39,72 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 		
 		player.DebugGui();
 
+#ifdef USE_IMGUI
+		ImGui::Begin("Training Dummy Debug");
+
+		if (!isTrainingDummyActive)
+		{
+			if (ImGui::Button("Spawn Dummy"))
+			{
+				trainingDummy.Initialize({ 800.0f, 440.0f });
+				isTrainingDummyActive = true;
+			}
+		}
+		else
+		{
+			if (ImGui::Button("Reset Dummy"))
+			{
+				trainingDummy.Initialize({ 800.0f, 440.0f });
+			}
+
+			if (ImGui::Button("Delete Dummy"))
+			{
+				isTrainingDummyActive = false;
+			}
+		}
+
+		ImGui::Text(
+			"Active: %s",
+			isTrainingDummyActive ? "Yes" : "No"
+		);
+
+		ImGui::End();
+#endif
+
+
 
 
 		player.Update(keys, preKeys);
+		if (isTrainingDummyActive)
+		{
+			trainingDummy.Update();
+			if (player.CheckHammerHit(trainingDummy.GetPosition(), trainingDummy.GetSize()))
+			{
+				if (trainingDummy.IsArmorBreak())
+				{
+					trainingDummy.DamageBody(player.GetHammerDamage(3));
+				}
+				else
+				{
+					trainingDummy.DamageArmor(player.GetHammerDamage(10));
+				}
+			}
+			if (player.CheckBulletHit(trainingDummy.GetPosition(), trainingDummy.GetSize()))
+			{
+				if (trainingDummy.IsArmorBreak())
+				{
+					trainingDummy.DamageBody(25);
+				}
+				else
+				{
+					trainingDummy.DamageArmor(3);
+				}
+			}
+		}
+	
+
+
+
 
 		///
 		/// ↑更新処理ここまで
@@ -43,9 +113,17 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 		///
 		/// ↓描画処理ここから
 		///
+		
+		if (isTrainingDummyActive)
+		{
+			trainingDummy.Draw();
+		}
+
 		player.Draw();
 
 		Novice::DrawLine(0, 600, 1280, 600, WHITE	);
+
+
 
 
 		///

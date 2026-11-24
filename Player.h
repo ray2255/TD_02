@@ -3,6 +3,7 @@
 enum class PlayerState
 {
 	Normal,
+	HammerCharge,
 	HammerAttack,
 	GunRecoil,
 	Hurt,
@@ -36,7 +37,17 @@ public:
 	Vector2 GetHammerSize() const { return HammerSize_; }
 
 	void DebugGui();
-		
+
+	void Damage(int damage, float knockbackx, float knockbacky);
+
+	bool CheckHammerHit(Vector2 targetPos, Vector2 targetSize);
+
+	int GetHammerDamage(int baseDamage)const 
+	{
+		return baseDamage + baseDamage * 2 * chargeFrames_ / kMaxChargeFrames_; // 溜めなしで1倍、最大で3倍
+	}
+
+	bool CheckBulletHit(Vector2 targePos, Vector2 targetSize);
 
 private:
 	PlayerState state_ = PlayerState::Normal;//初期状態
@@ -75,6 +86,8 @@ private:
 	bool isAiming_ = false;//照準中かどうか
 
 	int recoilTimer_ = 0;//反動の経過フレーム
+	int hurtTime_ = 0;// 操作できるまでの残り時間
+	int hurtDuration_ = 12;// 被弾時の硬直時間
 
 	
 	float recoilPowerX_ = 12.0f;// 射撃反動X
@@ -93,8 +106,27 @@ private:
 	float bulletSpeed_ = 30.0f;//弾丸速度
 	int bulletLife_ = 200;//弾丸の存在時間
 
-	float airVelocity_ = 0.0f;//// 空中の横移動速度
+	float airVelocity_ = 0.0f;// 空中の横移動速度
+
+	bool hasHammerHit_ = false;// 1回の攻撃ですでに命中したか
+
+
+	int hammerHitStopTimer_ = 0;
+	int hammerHitStopFrames_ = 5;
+
+	static constexpr int kMaxChargeFrames_ = 90;
+	static constexpr float kHammerReach_ = 48.0f;// 手元からヘッドまで
+	static constexpr float kHeadRadius_ = 11.0f;
+	static constexpr float kHeadSpacing_ = 9.0f;
+
+	int chargeFrames_ = 0;
+	float hammerAngle_ = 0.0f;
+	float releaseAngle_ = 0.0f;
+
+	Vector2 GetHammerHeadPoint(int index)const;// ハンマーヘッドを構成する3つの円の中心
 
 
 
+	int invincibleTimer_ = 0;
+	int invincibleDuration_ = 60;
 };
