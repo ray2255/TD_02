@@ -40,11 +40,13 @@ public:
 
 	void Damage(int damage, float knockbackx, float knockbacky);
 
+	void HealFromHammerHit();
+
 	bool CheckHammerHit(Vector2 targetPos, Vector2 targetSize);
 
-	int GetHammerDamage(int baseDamage)const 
+	int GetHammerDamage(int baseDamage) const
 	{
-		return baseDamage + baseDamage * 2 * chargeFrames_ / kMaxChargeFrames_; // 溜めなしで1倍、最大で3倍
+		return baseDamage + (baseDamage * hammerTurns_ + 1) / 2;
 	}
 
 	bool CheckBulletHit(Vector2 targePos, Vector2 targetSize);
@@ -65,6 +67,10 @@ private:
 	//体力
 	float hp_ = 100.0f;
 	float maxHp_ = 100.0f;
+
+	static constexpr float kMagnumHpCost_ = 5.0f;
+	static constexpr float kHammerBaseHeal_ = 3.0f;
+	static constexpr float kHammerHealPerTurn_ = 2.0f;
 
 	bool isGrounded_ = false;//地面に接地しているかどうか	
 
@@ -114,12 +120,17 @@ private:
 	int hammerHitStopTimer_ = 0;
 	int hammerHitStopFrames_ = 5;
 
-	static constexpr int kMaxChargeFrames_ = 90;
-	static constexpr float kHammerReach_ = 48.0f;// 手元からヘッドまで
-	static constexpr float kHeadRadius_ = 11.0f;
-	static constexpr float kHeadSpacing_ = 9.0f;
+	static constexpr float kHammerTwoPi_ = 6.28f;
+	static constexpr int kMaxHammerTurns_ = 3;
 
-	int chargeFrames_ = 0;
+	static constexpr float kHammerReach_ = 72.0f;// 手元からヘッドまで
+	static constexpr float kHeadRadius_ = 16.0f;
+	static constexpr float kHeadSpacing_ = 14.0f;
+
+	int hammerTurns_ = 0;
+	float hammerTurnAngle_ = 0.0f;
+	int prevHammerMouseX_ = 0;
+	int prevHammerMouseY_ = 0;
 	float hammerAngle_ = 0.0f;
 	float releaseAngle_ = 0.0f;
 

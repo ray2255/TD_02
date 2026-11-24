@@ -82,7 +82,10 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 			{
 				if (trainingDummy.IsArmorBreak())
 				{
-					trainingDummy.DamageBody(player.GetHammerDamage(3));
+					if (trainingDummy.DamageBody(player.GetHammerDamage(3)))
+					{
+						player.HealFromHammerHit();
+					}
 				}
 				else
 				{

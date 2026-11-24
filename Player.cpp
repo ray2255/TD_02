@@ -48,7 +48,8 @@ void Player::Initialize() {
 }
 
 
-void Player::Update(const char* keys, const char* preKeys) {
+void Player::Update(const char* keys, const char* preKeys) 
+{
 	(void)preKeys;
 	if (invincibleTimer_>0)
 	{
@@ -162,39 +163,53 @@ void Player::Update(const char* keys, const char* preKeys) {
 				{
 					direction = { static_cast<float>(facing_),0.0f };
 				}
-				for (int i = 0; i < kMaxBullets_; i++)
+				if (hp_ > kMagnumHpCost_)
 				{
-					if (!bullets_[i].isActive)
+					for (int i = 0; i < kMaxBullets_; i++)
 					{
-						bullets_[i].position = { center.x + direction.x * 30,center.y + direction.y * 30 };
-						bullets_[i].isActive = true;
-						bullets_[i].velocity = { direction.x * bulletSpeed_,direction.y * bulletSpeed_ };
+						if (bullets_[i].isActive)
+						{
+							continue;
+						}
+
+						bullets_[i].position = {
+							center.x + direction.x * 30.0f,
+							center.y + direction.y * 30.0f
+						};
+						bullets_[i].velocity = {
+							direction.x * bulletSpeed_,
+							direction.y * bulletSpeed_
+						};
 						bullets_[i].life = bulletLife_;
+						bullets_[i].isActive = true;
+
+						// 発射時にHPを消費する
+						hp_ -= kMagnumHpCost_;
+
+						velocity_.x = -direction.x * recoilPowerX_;
+						velocity_.y = -direction.y * recoilPowerX_;
+						isGrounded_ = false;
+						recoilTimer_ = recoilDuration_;
+						isAiming_ = false;
+						state_ = PlayerState::GunRecoil;
 						break;
 					}
 				}
-
-				velocity_.x = -direction.x * recoilPowerX_;
-				velocity_.y = -direction.y * recoilPowerX_;
-
-
-				isGrounded_ = false;
-
-				recoilTimer_ = recoilDuration_;
-				isAiming_ = false;
-
-				// 反動状態へ
-				state_ = PlayerState::GunRecoil;
 			}
 			else
 			{
 				state_ = PlayerState::HammerCharge;
-				chargeFrames_ = 0;
-				hammerAngle_ = -2.0f;
+				hammerTurns_ = 0;
+				hammerTurnAngle_ = 0.0f;
+				prevHammerMouseX_ = mouseX_;
+				prevHammerMouseY_ = mouseY_;
+
+				hammerAngle_ = (facing_ > 0) ? 0.0f : 3.14f;
 				attackTimer_ = 0;
-				hammerHitStopFrames_ = 0;
+				hammerHitStopTimer_ = 0;
 				isHammerActive_ = false;
 				hasHammerHit_ = false;
+
 				if (isGrounded_)
 				{
 					velocity_.x *= 0.35f;
@@ -204,16 +219,6 @@ void Player::Update(const char* keys, const char* preKeys) {
 	}
 	else if (state_ == PlayerState::HammerCharge)
 	{
-		const float centerX = position_.x + size_.x * 0.5f;
-		if (mouseX_ > centerX)
-		{
-			facing_ = 1;
-		}
-		if (mouseX_ < centerX)
-		{
-			facing_ = -1;
-		}
-
 		float moveInput = 0.0f;
 		if (keys[DIK_A]) moveInput -= 1.0f;
 		if (keys[DIK_D]) moveInput += 1.0f;
@@ -224,27 +229,9 @@ void Player::Update(const char* keys, const char* preKeys) {
 		}
 		else
 		{
-			velocity_.x *= 0.99f;  // 空中でキーを離したら慣性を残す
+			velocity_.x *= 0.99f;
 		}
-
-		if (isLeftMouseDown)
-		{
-			if (chargeFrames_ < kMaxChargeFrames_)
-			{
-				chargeFrames_++;
-			}
-
-			hammerAngle_ = std::fmod(hammerAngle_ + 0.12f, 6.2f);
-		}
-		else
-		{
-			// 左クリックを離した瞬間の角度を保存
-			releaseAngle_ = hammerAngle_;
-			attackTimer_ = 0;
-			state_ = PlayerState::HammerAttack;
-		}
-
-	}
+}
 
 	else if (state_ == PlayerState::HammerAttack)
 	{
@@ -265,20 +252,19 @@ void Player::Update(const char* keys, const char* preKeys) {
 		{
 			attackTimer_++;
 
-			constexpr float kRaiseAngle = -2.2f;
-			constexpr float kEndAngle = 0.85f;
-			constexpr float kTwoPi = 6.28f;
+			const float swingSide = static_cast<float>(facing_);
 
 			if (attackTimer_ <= 6)
 			{
-				// 現在の角度から近い方向へ振りかぶる
-				const float turn = std::remainder(kRaiseAngle - releaseAngle_, kTwoPi);
-				hammerAngle_ = releaseAngle_ + turn * (attackTimer_ / 6.0f);
+				// 振りかぶる
+				const float t = static_cast<float>(attackTimer_) / 6.0f;
+				hammerAngle_ = releaseAngle_ - swingSide * 1.1f * t;
 			}
 			else if (attackTimer_ <= 18)
 			{
-				const float t = (attackTimer_ - 6) / 12.0f;
-				hammerAngle_ = kRaiseAngle + (kEndAngle - kRaiseAngle) * t;
+				// 7～18フレームで振り抜く。12フレーム目に狙った方向を通る
+				const float t = static_cast<float>(attackTimer_ - 6) / 12.0f;
+				hammerAngle_ = releaseAngle_ + swingSide * (-1.1f + 2.2f * t);
 			}
 
 			isHammerActive_ = (attackTimer_ >= 7 && attackTimer_ <= 18);
@@ -342,6 +328,60 @@ void Player::Update(const char* keys, const char* preKeys) {
 
 	// ハンマーの位置
 	
+	if (state_ == PlayerState::HammerCharge)
+	{
+		const float cx = position_.x + size_.x * 0.5f;
+		const float cy = position_.y + size_.y * 0.5f;
+
+		const float dx = static_cast<float>(mouseX_) - cx;
+		const float dy = static_cast<float>(mouseY_) - cy;
+		const float prevDx = static_cast<float>(prevHammerMouseX_) - cx;
+		const float prevDy = static_cast<float>(prevHammerMouseY_) - cy;
+
+		// 中心付近では角度が急変するため、回転を数えない
+		constexpr float kDeadZone = 16.0f;
+		const bool valid = dx * dx + dy * dy >= kDeadZone * kDeadZone;
+		const bool prevValid =
+			prevDx * prevDx + prevDy * prevDy >= kDeadZone * kDeadZone;
+
+		if (valid)
+		{
+			hammerAngle_ = std::atan2(dy, dx);
+
+			if (dx > 0.0f) facing_ = 1;
+			if (dx < 0.0f) facing_ = -1;
+
+			if (prevValid && hammerTurns_ < kMaxHammerTurns_)
+			{
+				const float prevAngle = std::atan2(prevDy, prevDx);
+				const float delta =
+					std::remainder(hammerAngle_ - prevAngle, kHammerTwoPi_);
+
+				// 中心を横切るような急な反転は除外する
+				if (std::fabs(delta) < kHammerTwoPi_ * 0.25f)
+				{
+					hammerTurnAngle_ += delta;
+
+					if (std::fabs(hammerTurnAngle_) >= kHammerTwoPi_ - 0.0001f)
+					{
+						hammerTurns_++;
+						hammerTurnAngle_ -=
+							std::copysign(kHammerTwoPi_, hammerTurnAngle_);
+					}
+				}
+			}
+		}
+
+		prevHammerMouseX_ = mouseX_;
+		prevHammerMouseY_ = mouseY_;
+
+		if (!isLeftMouseDown)
+		{
+			releaseAngle_ = hammerAngle_;
+			attackTimer_ = 0;
+			state_ = PlayerState::HammerAttack;
+		}
+	}
 
 	airVelocity_ = velocity_.x;
 
@@ -373,9 +413,19 @@ void Player::Damage(int damage, float knockbackx, float knockbacky) {
 
 }
 
+void Player::HealFromHammerHit() {
+	if (state_==PlayerState::Dead)
+	{
+		return;
+	}
+
+	const float healAmount = kHammerBaseHeal_ + kHammerHealPerTurn_ * static_cast<float>(hammerTurns_);
+	hp_ = std::fmin(hp_ + healAmount, maxHp_);
+}
+
 Vector2 Player::GetHammerHeadPoint(int index) const
 {
-	const float dirX = std::cos(hammerAngle_) * static_cast<float>(facing_);
+	const float dirX = std::cos(hammerAngle_);
 	const float dirY = std::sin(hammerAngle_);
 
 	const float handX = position_.x + size_.x * 0.5f;
@@ -517,7 +567,7 @@ void Player::Draw()const {
 			);
 		}
 		// 金属のヘッド。最大まで溜めると金色になる
-		const unsigned int color = chargeFrames_ >= kMaxChargeFrames_ ? 0xFFD050FF : 0xAAB8C8FF;
+		const unsigned int color = hammerTurns_ >= kMaxHammerTurns_ ? 0xFFD050FF : 0xAAB8C8FF;
 
 		for (int i = -1; i <= 1; i++)
 		{
@@ -620,6 +670,7 @@ void Player::DebugGui()
 	{
 		Initialize();  // 初期位置・HP・状態をリセット
 	}
+	ImGui::Text("Hammer turns: %d / %d", hammerTurns_, kMaxHammerTurns_);
 
 	ImGui::End();
 #endif

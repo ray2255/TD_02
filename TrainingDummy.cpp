@@ -34,22 +34,21 @@ void TrainingDummy::DamageArmor(int damage)
 	hitFlashTimer_ = 5;
 }
 
-void TrainingDummy::DamageBody(int damage)
+bool TrainingDummy::DamageBody(int damage)
 {
-	// 装甲が残っている時はダメージを受けない
-	if (armorHp_ > 0)
+	if (armorHp_ > 0 || bodyHp_ <= 0 || damage <= 0)
 	{
-		return;
+		return false;
 	}
 
 	bodyHp_ -= damage;
-
 	if (bodyHp_ < 0)
 	{
 		bodyHp_ = 0;
 	}
 
 	hitFlashTimer_ = 5;
+	return true;
 }
 
 void TrainingDummy::Draw() const

@@ -9,7 +9,7 @@ public:
 	void Draw() const;
 	
 	void DamageArmor(int damage);
-	void DamageBody(int damage);
+	bool DamageBody(int damage);
 
 
 	Vector2 GetPosition() const
