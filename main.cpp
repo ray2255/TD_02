@@ -61,6 +61,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	Novice::Initialize(kWindowTitle, 1280, 720);
 
 	Player player;
+	player.LoadTextures();
 	TrainingDummy trainingDummy;
 	bool isTrainingDummyActive = false;
 	constexpr int kSlowMotionFrame = 300;

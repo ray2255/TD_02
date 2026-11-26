@@ -61,6 +61,8 @@ public:
 
 	bool ConsumePerfectDodge();
 
+	void LoadTextures();
+
 private:
 	PlayerState state_ = PlayerState::Normal;//初期状態
 
@@ -84,6 +86,8 @@ private:
 	static constexpr float kHammerHealPerTurn_ = 2.0f;
 
 	bool isGrounded_ = false;//地面に接地しているかどうか	
+
+	int idleBreathFrame_ = 0;//呼吸待機動作
 
 	float gravity_ = 0.5f;//重力加速度
 
@@ -118,7 +122,7 @@ private:
 
 
 	
-	float recoilPowerX_ = 12.0f;// 射撃反動X
+	float recoilPowerX_ = 15.0f;// 射撃反動X
 	float recoilPowerY_ = 5.0f;// 射撃反動Y
 	int recoilDuration_ = 20;// 射撃反動強さ
 
@@ -163,5 +167,15 @@ private:
 	int invincibleDuration_ = 60;
 
 
+	int bodyTexture_ = -1;
+	int feetTexture_ = -1;
+	int gunTexture_ = -1;
+	int hammerTexture_ = -1;
+	int bulletTexture_ = -1;
+
+	Vector2 GetGunShoulder()const;
+	Vector2 GetHammerShoulder()const;
+	Vector2 GetGunDirection()const;
+	Vector2 GetMuzzlePosition()const;
 
 };

@@ -5,6 +5,48 @@
 #include <imgui.h>
 #endif
 
+namespace {
+	constexpr float kHalfPi = 1.57f;
+	void DrawPart(
+		int texture,
+		int width, int height,
+		Vector2 pivot, Vector2 anchor,
+		float scaleX, float scaleY,
+		float angle,
+		unsigned int color = WHITE
+	)
+	{
+		const float c = std::cos(angle);
+		const float s = std::sin(angle);
+
+
+		auto toScreen = [&](float x, float y)->Vector2
+			{
+				x = (x - pivot.x) * scaleX;
+				y = (y - pivot.y) * scaleY;
+				return{
+					anchor.x + x * c - y * s,
+					anchor.y + x * s + y * c,
+				};
+			};
+		const float w = static_cast<float>(width);
+		const float h = static_cast<float>(height);
+
+		const Vector2 lt = toScreen(0.0f, 0.0f);
+		const Vector2 rt = toScreen(w, 0.0f);
+		const Vector2 lb = toScreen(0.0f, h);
+		const Vector2 rb = toScreen(w, h);
+
+		Novice::DrawQuad(
+			static_cast<int>(lt.x), static_cast<int>(lt.y),
+			static_cast<int>(rt.x), static_cast<int>(rt.y),
+			static_cast<int>(lb.x), static_cast<int>(lb.y),
+			static_cast<int>(rb.x), static_cast<int>(rb.y),
+			0, 0, width, height, texture, color
+		);
+
+	}
+}
 
 void Player::Initialize() {
 	state_ = PlayerState::Normal;
@@ -22,6 +64,8 @@ void Player::Initialize() {
 	hp_ = maxHp_;
 
 	isGrounded_ = false;
+
+	idleBreathFrame_ = 0;
 
 	attackTimer_ = 0;
 
@@ -55,6 +99,15 @@ void Player::Initialize() {
 	hasHammerHit_ = false;
 
 	hammerHitStopTimer_ = 0;
+
+}
+void Player::LoadTextures()
+{
+	bodyTexture_ = Novice::LoadTexture("./Resources/Player/actionPlayer0.png");
+	feetTexture_ = Novice::LoadTexture("./Resources/Player/foot2.png");
+	gunTexture_ = Novice::LoadTexture("./Resources/Player/actionGun.png");
+	hammerTexture_ = Novice::LoadTexture("./Resources/Player/actionHummer.png");
+	bulletTexture_ = Novice::LoadTexture("./Resources/Player/actionBullet.png");
 }
 
 
@@ -185,19 +238,8 @@ void Player::Update(const char* keys, const char* preKeys, float worldSpeed, boo
 			{
 				// マグナム発射
 				// 反動で射撃方向と反対に吹き飛ぶ
-				Vector2 center = { position_.x + size_.x * 0.5f,position_.y + size_.y * 0.5f };
-				Vector2 direction = { static_cast<float>(mouseX_) - center.x,static_cast<float>(mouseY_) - center.y };
-				float length = std::sqrt(direction.x * direction.x + direction.y * direction.y);
-				if (length > 0.001f)
-				{
-					direction.x /= length;
-					direction.y /= length;
-
-				}
-				else
-				{
-					direction = { static_cast<float>(facing_),0.0f };
-				}
+				const Vector2 direction = GetGunDirection();
+				const Vector2 muzzle = GetMuzzlePosition();
 				if (hp_ > kMagnumHpCost_)
 				{
 					for (int i = 0; i < kMaxBullets_; i++)
@@ -206,11 +248,8 @@ void Player::Update(const char* keys, const char* preKeys, float worldSpeed, boo
 						{
 							continue;
 						}
+						bullets_[i].position = muzzle;
 
-						bullets_[i].position = {
-							center.x + direction.x * 30.0f,
-							center.y + direction.y * 30.0f
-						};
 						bullets_[i].velocity = {
 							direction.x * bulletSpeed_,
 							direction.y * bulletSpeed_
@@ -379,8 +418,9 @@ void Player::Update(const char* keys, const char* preKeys, float worldSpeed, boo
 
 	if (state_ == PlayerState::HammerCharge)
 	{
-		const float cx = position_.x + size_.x * 0.5f;
-		const float cy = position_.y + size_.y * 0.5f;
+		const Vector2 pivot = GetHammerShoulder();
+		const float cx = pivot.x;
+		const float cy = pivot.y;
 
 		const float dx = static_cast<float>(mouseX_) - cx;
 		const float dy = static_cast<float>(mouseY_) - cy;
@@ -432,6 +472,22 @@ void Player::Update(const char* keys, const char* preKeys, float worldSpeed, boo
 	}
 
 	airVelocity_ = velocity_.x;
+
+
+	const bool isIdle =
+		state_ == PlayerState::Normal &&
+		isGrounded_ &&
+		!isAiming_ &&
+		std::fabs(velocity_.x) < 0.01f;
+
+	if (isIdle)
+	{
+		idleBreathFrame_ = (idleBreathFrame_ + 1) % 150;
+	}
+	else
+	{
+		idleBreathFrame_ = 0;
+	}
 
 }
 
@@ -492,8 +548,9 @@ Vector2 Player::GetHammerHeadPoint(int index) const
 	const float dirX = std::cos(hammerAngle_);
 	const float dirY = std::sin(hammerAngle_);
 
-	const float handX = position_.x + size_.x * 0.5f;
-	const float handY = position_.y + size_.y * 0.5f;
+	const Vector2 pivot = GetHammerShoulder();
+	const float handX = pivot.x;
+	const float handY = pivot.y;
 
 	// ヘッドは柄に対して直角に配置する
 	const float offset = static_cast<float>(index) * kHeadSpacing_;
@@ -559,90 +616,191 @@ bool Player::CheckBulletHit(Vector2 targetPos, Vector2 targetSize) {
 	return false;
 }
 
+Vector2 Player::GetGunShoulder()const {
+	const Vector2 center = GetCenter();
+	return{
+		center.x + 10.0f * static_cast<float>(facing_),
+		position_.y + size_.y - 78.0f
+
+	};
+}
+Vector2 Player::GetHammerShoulder() const {
+	const float centerX = GetCenter().x;
+	const float shoulderY = position_.y + size_.y - 78.0f;
+
+	if (state_ == PlayerState::HammerCharge ||
+		state_ == PlayerState::HammerAttack)
+	{
+		return { centerX, shoulderY };
+	}
+
+	return {
+		centerX - 10.0f * static_cast<float>(facing_),
+		shoulderY
+	};
+}
+Vector2 Player::GetGunDirection() const
+{
+	const Vector2 shoulder = GetGunShoulder();
+	const float dx = static_cast<float>(mouseX_) - shoulder.x;
+	const float dy = static_cast<float>(mouseY_) - shoulder.y;
+	const float length = std::sqrt(dx * dx + dy * dy);
+
+	if (length < 0.01f)
+	{
+		return { static_cast<float>(facing_), 0.0f };
+	}
+
+	return { dx / length, dy / length };
+}
+
+Vector2 Player::GetMuzzlePosition() const
+{
+	const Vector2 shoulder = GetGunShoulder();
+	const Vector2 dir = GetGunDirection();
+
+	// 画像上の肩から銃口まで約210px、描画倍率は0.22
+	constexpr float kGunLength = 210.0f * 0.22f;
+	return {
+		shoulder.x + dir.x * kGunLength,
+		shoulder.y + dir.y * kGunLength
+	};
+}
 
 void Player::Draw()const {
-	Novice::DrawBox(
-		static_cast<int>(position_.x),
-		static_cast<int>(position_.y),
-		static_cast<int>(size_.x),
-		static_cast<int>(size_.y),
-		0.0f, WHITE, kFillModeSolid);
+	constexpr float kBodyScale = 0.5f;//Player大きさ
+	const float face = static_cast<float>(facing_);
+
+	// 靴底から足の画像1枚分だけ上がった位置が腰
+	const Vector2 waist = {
+		position_.x + size_.x * 0.5f,
+		position_.y + size_.y - 90.0f * kBodyScale
+	};
+
+	// 足：画像の上端を腰に合わせる → 靴は腰より下
+	DrawPart(feetTexture_, 90, 90,
+		{ 45.0f, 0.0f }, waist,
+		face * kBodyScale, kBodyScale, 0.0f);
+
+	// 上半身：服の裾を腰に合わせる → 頭は腰より上
+	const float phase = static_cast<float>(idleBreathFrame_) * 6.2831853f / 150.0f;
+	const float breath = (1.0f - std::cos(phase)) * 0.5f;
+	const float bodyStretch = 1.0f + breath * 0.025f;
+
+	DrawPart(bodyTexture_, 250, 250,
+		{ 125.0f, 174.0f }, waist,
+		face * kBodyScale, kBodyScale * bodyStretch, 0.0f);
+
+	// 左手：通常は下向き、照準中はマウスの方向へ
+	Vector2 gunShoulder = GetGunShoulder();
+	gunShoulder.y += (gunShoulder.y - waist.y) * (bodyStretch - 1.0f);
+	float gunAngle = 0.0f;
+
+	if (isAiming_)
+	{
+		const Vector2 dir = GetGunDirection();
+		gunAngle = std::atan2(dir.y, dir.x) - kHalfPi;
+	}
+
+	DrawPart(gunTexture_, 150, 250,
+		{ 75.0f, 20.0f }, gunShoulder,
+		face * 0.22f, 0.22f, gunAngle);
+
+	// 右手：通常は下向き、溜め・攻撃中は実際の判定位置に合わせる
+	Vector2 hammerShoulder = GetHammerShoulder();
+	hammerShoulder.y += (hammerShoulder.y - waist.y) * (bodyStretch - 1.0f);
+	const bool usingHammer =
+		state_ == PlayerState::HammerCharge ||
+		state_ == PlayerState::HammerAttack;
+
+	float hammerDrawAngle = 0.0f;
+	float hammerScaleY = 0.22f;
+
+	if (usingHammer)
+	{
+		const Vector2 head = GetHammerHeadPoint(0);
+		const float dx = head.x - hammerShoulder.x;
+		const float dy = head.y - hammerShoulder.y;
+
+		hammerDrawAngle = std::atan2(dy, dx) - kHalfPi;
+
+		// 素材の肩支点 y=20 からヘッド中心 y≈215 まで
+		hammerScaleY = std::sqrt(dx * dx + dy * dy) / 195.0f;
+	}
+
+
+	//ハンマーを光に付ける
+	const bool isFullCharge = usingHammer && hammerTurns_ >= kMaxHammerTurns_;
+	const Vector2 head = GetHammerHeadPoint(0);
+	const int headX = static_cast<int>(head.x);
+	const int headY = static_cast<int>(head.y);
+
+	
+	if (isFullCharge)
+	{
+		Novice::DrawEllipse(headX, headY, 29, 29, 0.0f, 0xFFB82028, kFillModeSolid);
+		Novice::DrawEllipse(headX, headY, 22, 22, 0.0f, 0xFFD04050, kFillModeSolid);
+	}
+
+	DrawPart(hammerTexture_, 150, 250,
+		{ 75.0f, 20.0f }, hammerShoulder,
+		face * (usingHammer ? 0.40f : 0.22f),
+		hammerScaleY, hammerDrawAngle, WHITE);
+
+
+	if (isFullCharge)
+	{
+		Novice::DrawEllipse(headX, headY, 11, 11, 0.0f, 0xFFCC4055, kFillModeSolid);
+		Novice::DrawEllipse(headX, headY, 3, 3, 0.0f, 0xFFF4B0DD, kFillModeSolid);
+	}
 
 	// 照準中だけレーザーを表示する
 	if (isAiming_)
 	{
-		Vector2 center = { position_.x + size_.x * 0.5f,position_.y + size_.y * 0.5f };
+		const Vector2 muzzle = GetMuzzlePosition();
+		const Vector2 direction = GetGunDirection();
+		constexpr float kLaserLength = 2500.0f;
 
-		Vector2 direction = { static_cast<float>(mouseX_) - center.x,static_cast<float>(mouseY_) - center.y };
-		float length = std::sqrt(direction.x * direction.x + direction.y * direction.y);
-
-		if (length > 0.001f)
-		{
-			direction.x /= length;
-			direction.y /= length;
-		}
-		else
-		{
-			direction = { static_cast<float>(facing_),0.0f };
-		}
-		//仮の銃口位置
-		Vector2 muzzlePos = { center.x + direction.x * 30.0f,center.y + direction.y * 30.0f };
-
-		// 銃口から伸びるレーザーの終点
-		float leserLenght = 2500.0f;
-
-		Vector2 laserEnd = {
-			muzzlePos.x + direction.x * leserLenght,
-			muzzlePos.y + direction.y * leserLenght
-		};
 		Novice::DrawLine(
-			static_cast<int>(center.x),
-			static_cast<int>(center.y),
-			static_cast<int>(muzzlePos.x),
-			static_cast<int>(muzzlePos.y),
-			WHITE
-		);
-		Novice::DrawLine(
-			static_cast<int>(muzzlePos.x),
-			static_cast<int>(muzzlePos.y),
-			static_cast<int>(laserEnd.x),
-			static_cast<int>(laserEnd.y),
+			static_cast<int>(muzzle.x),
+			static_cast<int>(muzzle.y),
+			static_cast<int>(muzzle.x + direction.x * kLaserLength),
+			static_cast<int>(muzzle.y + direction.y * kLaserLength),
 			0xFF000080
 		);
-
 	}
 
 
 
-	if (state_ == PlayerState::HammerCharge || state_ == PlayerState::HammerAttack)
-	{
-		const int handX = static_cast<int>(position_.x + size_.x * 0.5f);
-		const int handY = static_cast<int>(position_.y + size_.y * 0.5f);
-		const Vector2 head = GetHammerHeadPoint(0);
+	//if (state_ == PlayerState::HammerCharge || state_ == PlayerState::HammerAttack)
+	//{
+	//	const int handX = static_cast<int>(position_.x + size_.x * 0.5f);
+	//	const int handY = static_cast<int>(position_.y + size_.y * 0.5f);
+	//	const Vector2 head = GetHammerHeadPoint(0);
 
 
-		for (int i = 0; i <= 3; i++)
-		{
-			Novice::DrawLine(
-				handX + i, handY,
-				static_cast<int>(head.x) + i,
-				static_cast<int>(head.y),
-				0xAF7848FF
-			);
-		}
-		// 金属のヘッド。最大まで溜めると金色になる
-		const unsigned int color = hammerTurns_ >= kMaxHammerTurns_ ? 0xFFD050FF : 0xAAB8C8FF;
+	//	for (int i = 0; i <= 3; i++)
+	//	{
+	//		Novice::DrawLine(
+	//			handX + i, handY,
+	//			static_cast<int>(head.x) + i,
+	//			static_cast<int>(head.y),
+	//			0xAF7848FF
+	//		);
+	//	}
+	//	// 金属のヘッド。最大まで溜めると金色になる
+	//	const unsigned int color = hammerTurns_ >= kMaxHammerTurns_ ? 0xFFD050FF : 0xAAB8C8FF;
 
-		for (int i = -1; i <= 1; i++)
-		{
-			const Vector2 p = GetHammerHeadPoint(i);
-			Novice::DrawEllipse(
-				static_cast<int>(p.x), static_cast<int>(p.y),
-				static_cast<int>(kHeadRadius_), static_cast<int>(kHeadRadius_),
-				0.0f, color, kFillModeSolid);
-		}
+	//	for (int i = -1; i <= 1; i++)
+	//	{
+	//		const Vector2 p = GetHammerHeadPoint(i);
+	//		Novice::DrawEllipse(
+	//			static_cast<int>(p.x), static_cast<int>(p.y),
+	//			static_cast<int>(kHeadRadius_), static_cast<int>(kHeadRadius_),
+	//			0.0f, color, kFillModeSolid);
+	//	}
 
-	}
+	//}
 
 	for (int i = 0; i < kMaxBullets_; i++)
 	{
@@ -650,11 +808,13 @@ void Player::Draw()const {
 		{
 			continue;
 		}
-		Novice::DrawBox(
-			static_cast<int>(bullets_[i].position.x - 4.0f),
-			static_cast<int>(bullets_[i].position.y - 4.0f),
-			8, 8,
-			0.0f, 0xFF8800FF, kFillModeSolid);
+		const Vector2 v = bullets_[i].velocity;
+		const float bulletAngle = std::atan2(v.y, v.x);
+
+		//Bulletの大きさ
+		DrawPart(bulletTexture_, 50, 50,
+			{ 25.0f, 25.0f }, bullets_[i].position,
+			0.50f, 0.50f, bulletAngle);
 	}
 
 
