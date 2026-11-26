@@ -35,6 +35,10 @@ void Player::Initialize() {
 
 	hurtTime_ = 0;
 
+	dodgeFrame_ = 0;
+
+	dodgeDirection_ = 1;
+
 	for (int i = 0; i < kMaxBullets_; i++)
 	{
 		bullets_[i] = {};
@@ -48,10 +52,10 @@ void Player::Initialize() {
 }
 
 
-void Player::Update(const char* keys, const char* preKeys) 
+void Player::Update(const char* keys, const char* preKeys)
 {
 	(void)preKeys;
-	if (invincibleTimer_>0)
+	if (invincibleTimer_ > 0)
 	{
 		invincibleTimer_--;
 	}
@@ -92,7 +96,7 @@ void Player::Update(const char* keys, const char* preKeys)
 
 
 	// 通常状態で右ボタンを押している間だけ照準
-	isAiming_ = (state_== PlayerState::Normal && isRightMouseDown);
+	isAiming_ = (state_ == PlayerState::Normal && isRightMouseDown);
 
 	if (state_ == PlayerState::Normal)
 	{
@@ -115,7 +119,7 @@ void Player::Update(const char* keys, const char* preKeys)
 		{
 			moveInput -= 1.0f;
 		}
-	
+
 		if (keys[DIK_D])
 		{
 			moveInput += 1.0f;
@@ -144,16 +148,36 @@ void Player::Update(const char* keys, const char* preKeys)
 			velocity_.y = -jumpPower_;
 			isGrounded_ = false;
 		}
-		if (isLeftMouseTriggered)
+		if (keys[DIK_LSHIFT] && !preKeys[DIK_LSHIFT])
+		{
+			state_ = PlayerState::Dodge;
+			dodgeFrame_ = 0;
+			isAiming_ = false;
+
+			if (moveInput < 0.0f)
+			{
+				dodgeDirection_ = -1;
+			}
+			else if (moveInput > 0.0f)
+			{
+				dodgeDirection_ = 1;
+			}
+			else
+			{
+				dodgeDirection_ = facing_;
+			}
+			velocity_.x = static_cast<float>(dodgeDirection_ * kDodgeSpeed_);
+		}
+		else if (isLeftMouseTriggered)
 		{
 			if (isAiming_)
 			{
 				// マグナム発射
 				// 反動で射撃方向と反対に吹き飛ぶ
-				Vector2 center = {position_.x + size_.x * 0.5f,position_.y + size_.y * 0.5f};
+				Vector2 center = { position_.x + size_.x * 0.5f,position_.y + size_.y * 0.5f };
 				Vector2 direction = { static_cast<float>(mouseX_) - center.x,static_cast<float>(mouseY_) - center.y };
 				float length = std::sqrt(direction.x * direction.x + direction.y * direction.y);
-				if (length>0.001f)
+				if (length > 0.001f)
 				{
 					direction.x /= length;
 					direction.y /= length;
@@ -217,6 +241,20 @@ void Player::Update(const char* keys, const char* preKeys)
 			}
 		}
 	}
+	else if (state_==PlayerState::Dodge)
+	{
+		dodgeFrame_++;
+		if (dodgeFrame_>=kDodgeFrame_)
+		{
+			velocity_.x = 0.0f;
+			state_ = PlayerState::Normal;
+		}
+		else
+		{
+			velocity_.x = static_cast<float>(dodgeDirection_) * kDodgeSpeed_;
+		}
+	}
+
 	else if (state_ == PlayerState::HammerCharge)
 	{
 		float moveInput = 0.0f;
@@ -231,7 +269,7 @@ void Player::Update(const char* keys, const char* preKeys)
 		{
 			velocity_.x *= 0.99f;
 		}
-}
+	}
 
 	else if (state_ == PlayerState::HammerAttack)
 	{
@@ -276,7 +314,7 @@ void Player::Update(const char* keys, const char* preKeys)
 				attackTimer_ = 0;
 			}
 		}
-}
+	}
 	else if (state_ == PlayerState::GunRecoil)
 	{
 		// 反動時間を減らす
@@ -284,23 +322,23 @@ void Player::Update(const char* keys, const char* preKeys)
 		velocity_.x *= 0.9f;
 
 		// 反動終了
-		if (recoilTimer_<=0)
+		if (recoilTimer_ <= 0)
 		{
 			velocity_.x = 0.0f;
 			state_ = PlayerState::Normal;
 		}
 	}
-	else if (state_==PlayerState::Hurt)
+	else if (state_ == PlayerState::Hurt)
 	{
 		velocity_.x *= 0.9f;
 		hurtTime_--;
-		if (hurtTime_<=0)
+		if (hurtTime_ <= 0)
 		{
 			state_ = PlayerState::Normal;
 		}
 	}
 
-	else if (state_==PlayerState::Dead)
+	else if (state_ == PlayerState::Dead)
 	{
 		return;
 	}
@@ -327,7 +365,7 @@ void Player::Update(const char* keys, const char* preKeys)
 	}
 
 	// ハンマーの位置
-	
+
 	if (state_ == PlayerState::HammerCharge)
 	{
 		const float cx = position_.x + size_.x * 0.5f;
@@ -388,7 +426,11 @@ void Player::Update(const char* keys, const char* preKeys)
 }
 
 void Player::Damage(int damage, float knockbackx, float knockbacky) {
-	if (damage <=0||invincibleTimer_>0||state_==PlayerState::Dead)
+	if (state_==PlayerState::Dodge)
+	{
+		return;
+	}
+	if (damage <= 0 || invincibleTimer_ > 0 || state_ == PlayerState::Dead)
 	{
 		return;
 	}
@@ -414,7 +456,7 @@ void Player::Damage(int damage, float knockbackx, float knockbacky) {
 }
 
 void Player::HealFromHammerHit() {
-	if (state_==PlayerState::Dead)
+	if (state_ == PlayerState::Dead)
 	{
 		return;
 	}
@@ -451,8 +493,8 @@ bool Player::CheckHammerHit(Vector2 targetPos, Vector2 targetSize)
 		const Vector2 p = GetHammerHeadPoint(i);
 
 		// 円の中心に最も近い、木人の矩形上または内部の点
-		const float nearX = std::fmax(targetPos.x,std::fmin(p.x, targetPos.x + targetSize.x));
-		const float nearY = std::fmax(targetPos.y,std::fmin(p.y, targetPos.y + targetSize.y));
+		const float nearX = std::fmax(targetPos.x, std::fmin(p.x, targetPos.x + targetSize.x));
+		const float nearY = std::fmax(targetPos.y, std::fmin(p.y, targetPos.y + targetSize.y));
 
 		const float dx = p.x - nearX;
 		const float dy = p.y - nearY;
@@ -500,15 +542,15 @@ void Player::Draw()const {
 	Novice::DrawBox(
 		static_cast<int>(position_.x),
 		static_cast<int>(position_.y),
-		static_cast<int>(size_.x), 
-		static_cast<int>(size_.y), 
-		0.0f, WHITE,kFillModeSolid);
+		static_cast<int>(size_.x),
+		static_cast<int>(size_.y),
+		0.0f, WHITE, kFillModeSolid);
 
 	// 照準中だけレーザーを表示する
 	if (isAiming_)
 	{
 		Vector2 center = { position_.x + size_.x * 0.5f,position_.y + size_.y * 0.5f };
-	
+
 		Vector2 direction = { static_cast<float>(mouseX_) - center.x,static_cast<float>(mouseY_) - center.y };
 		float length = std::sqrt(direction.x * direction.x + direction.y * direction.y);
 
@@ -557,7 +599,7 @@ void Player::Draw()const {
 		const Vector2 head = GetHammerHeadPoint(0);
 
 
-		for (int i = 0; i <=3; i++)
+		for (int i = 0; i <= 3; i++)
 		{
 			Novice::DrawLine(
 				handX + i, handY,
@@ -588,7 +630,7 @@ void Player::Draw()const {
 		}
 		Novice::DrawBox(
 			static_cast<int>(bullets_[i].position.x - 4.0f),
-			static_cast<int>(bullets_[i].position.y - 4.0f), 
+			static_cast<int>(bullets_[i].position.y - 4.0f),
 			8, 8,
 			0.0f, 0xFF8800FF, kFillModeSolid);
 	}
@@ -636,6 +678,9 @@ void Player::DebugGui()
 	case PlayerState::Hurt:
 		stateName = "Hurt";
 		break;
+	case PlayerState::Dodge:
+		stateName = "Dodge";
+		break;
 	case PlayerState::Dead:
 		stateName = "Dead";
 		break;
@@ -680,4 +725,3 @@ void Player::DebugGui()
 
 
 
-	

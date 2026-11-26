@@ -6,6 +6,7 @@ enum class PlayerState
 	HammerCharge,
 	HammerAttack,
 	GunRecoil,
+	Dodge,
 	Hurt,
 	Dead
 };
@@ -19,7 +20,7 @@ struct PlayerBullet
 };
 
 class Player
-{
+{	
 public:
 	// 初期化
 	void Initialize();
@@ -95,6 +96,13 @@ private:
 	int hurtTime_ = 0;// 操作できるまでの残り時間
 	int hurtDuration_ = 12;// 被弾時の硬直時間
 
+
+	int dodgeFrame_ = 0;// 回避開始からの経過フレーム
+	int dodgeDirection_ = 1;// 回避方向（左 -1、右 1）
+	static constexpr int kDodgeFrame_ = 16;// 回避の長さ
+	static constexpr float kDodgeSpeed_ = 9.0f;// 1フレームの横移動量
+
+
 	
 	float recoilPowerX_ = 12.0f;// 射撃反動X
 	float recoilPowerY_ = 5.0f;// 射撃反動Y
@@ -137,7 +145,9 @@ private:
 	Vector2 GetHammerHeadPoint(int index)const;// ハンマーヘッドを構成する3つの円の中心
 
 
-
-	int invincibleTimer_ = 0;
+	int invincibleTimer_ = 0;//無敵状態
 	int invincibleDuration_ = 60;
+
+
+
 };
