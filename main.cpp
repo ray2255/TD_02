@@ -1,6 +1,6 @@
 #include <Novice.h>
 #include <Windows.h>
-
+#include "Enemy.h"
 const char kWindowTitle[] = "LC1C_07_クギヤマ_ソラ_タイトル";
 
 // ゲーム内部の基準解像度
@@ -14,9 +14,10 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	int screenWidth = GetSystemMetrics(SM_CXSCREEN);
 	int screenHeight = GetSystemMetrics(SM_CYSCREEN);
 
-	// ライブラリの初期化
-	Novice::Initialize(kWindowTitle, screenWidth, screenHeight);
+	Novice::Initialize(kWindowTitle, 1280, 720);
 
+	Enemy* enemy = new Enemy();
+	enemy->Initialize();
 	
 
 	// キー入力結果を受け取る箱
@@ -36,7 +37,14 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 		///
 		/// ↓更新処理ここから
 		///
+		enemy->Update();
 		
+		if (keys[DIK_B] && preKeys[DIK_B] == 0) {
+			enemy->Attack(EnemyAtteck::bite);
+		}
+		if (keys[DIK_V] && preKeys[DIK_V] == 0) {
+			enemy->Attack(EnemyAtteck::Tellslam);
+		}
 		///
 		/// ↑更新処理ここまで
 		///
@@ -44,9 +52,9 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 		///
 		/// ↓描画処理ここから
 		///
-
 		
-
+		Novice::DrawBox(0, 0, screenWidth, screenHeight, 0.0f, 0x181C24FF, kFillModeSolid);
+		enemy->Draw();
 		///
 		/// ↑描画処理ここまで
 		///
