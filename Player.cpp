@@ -37,7 +37,13 @@ void Player::Initialize() {
 
 	dodgeFrame_ = 0;
 
+	perfectDodgeTriggered_ = false;
+
+	perfectDodgeCount_ = 0;
+
 	dodgeDirection_ = 1;
+
+	perfectDodgePending_ = false;
 
 	for (int i = 0; i < kMaxBullets_; i++)
 	{
@@ -52,7 +58,7 @@ void Player::Initialize() {
 }
 
 
-void Player::Update(const char* keys, const char* preKeys)
+void Player::Update(const char* keys, const char* preKeys, float worldSpeed, bool updateWorld)
 {
 	(void)preKeys;
 	if (invincibleTimer_ > 0)
@@ -84,13 +90,17 @@ void Player::Update(const char* keys, const char* preKeys)
 		{
 			continue;
 		}
-		bullets_[i].position.x += bullets_[i].velocity.x;
-		bullets_[i].position.y += bullets_[i].velocity.y;
-
-		bullets_[i].life--;
-		if (bullets_[i].life <= 0) {
-			bullets_[i].isActive = false;
+		bullets_[i].position.x += bullets_[i].velocity.x*worldSpeed;
+		bullets_[i].position.y += bullets_[i].velocity.y*worldSpeed;
+		if (updateWorld)
+		{
+			bullets_[i].life--;
+			if (bullets_[i].life <= 0) 
+			{
+				bullets_[i].isActive = false;
+			}
 		}
+		
 
 	}
 
@@ -152,6 +162,7 @@ void Player::Update(const char* keys, const char* preKeys)
 		{
 			state_ = PlayerState::Dodge;
 			dodgeFrame_ = 0;
+			perfectDodgeTriggered_ = false;
 			isAiming_ = false;
 
 			if (moveInput < 0.0f)
@@ -379,8 +390,7 @@ void Player::Update(const char* keys, const char* preKeys)
 		// 中心付近では角度が急変するため、回転を数えない
 		constexpr float kDeadZone = 16.0f;
 		const bool valid = dx * dx + dy * dy >= kDeadZone * kDeadZone;
-		const bool prevValid =
-			prevDx * prevDx + prevDy * prevDy >= kDeadZone * kDeadZone;
+		const bool prevValid = prevDx * prevDx + prevDy * prevDy >= kDeadZone * kDeadZone;
 
 		if (valid)
 		{
@@ -425,9 +435,16 @@ void Player::Update(const char* keys, const char* preKeys)
 
 }
 
-void Player::Damage(int damage, float knockbackx, float knockbacky) {
+void Player::Damage(int damage, float knockbackx, float knockbacky) 
+{
 	if (state_==PlayerState::Dodge)
 	{
+		if (damage > 0 && invincibleTimer_ == 00 && dodgeFrame_ < kPerfectDodgeFrames_ && !perfectDodgeTriggered_)
+		{
+			perfectDodgeTriggered_ = true;
+			perfectDodgeCount_++;
+			perfectDodgePending_ = true;
+		}
 		return;
 	}
 	if (damage <= 0 || invincibleTimer_ > 0 || state_ == PlayerState::Dead)
@@ -453,6 +470,11 @@ void Player::Damage(int damage, float knockbackx, float knockbacky) {
 	state_ = PlayerState::Hurt;
 
 
+}
+bool Player::ConsumePerfectDodge() {
+	const bool triggereed = perfectDodgePending_;
+	perfectDodgePending_ = false;
+	return triggereed;
 }
 
 void Player::HealFromHammerHit() {
@@ -658,6 +680,8 @@ void Player::DebugGui()
 	ImGui::Text("Facing: %s", facing_ == 1 ? "Right" : "Left");
 	ImGui::Text("Grounded: %s", isGrounded_ ? "Yes" : "No");
 	ImGui::Text("Aiming: %s", isAiming_ ? "Yes" : "No");
+	ImGui::Text("Dodge Frame: %d", dodgeFrame_);
+	ImGui::Text("Perfect Dodge Count: %d", perfectDodgeCount_);
 
 	const char* stateName = "Unknown";
 

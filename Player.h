@@ -26,10 +26,17 @@ public:
 	void Initialize();
 
 	// 更新
-	void Update(const char* keys, const char* prevKeys);
+	void Update(const char* keys, const char* prevKeys,float worldSpeed,bool updateWorld);
 
 	// 描画
 	void Draw()const;
+
+	Vector2 GetCenter()const{
+		return{
+		position_.x + size_.x * 0.5f,
+		position_.y + size_.y * 0.5f
+		};
+	}
 
 	bool IsHammerActive() const { return isHammerActive_; }
 
@@ -52,6 +59,8 @@ public:
 
 	bool CheckBulletHit(Vector2 targePos, Vector2 targetSize);
 
+	bool ConsumePerfectDodge();
+
 private:
 	PlayerState state_ = PlayerState::Normal;//初期状態
 
@@ -69,6 +78,7 @@ private:
 	float hp_ = 100.0f;
 	float maxHp_ = 100.0f;
 
+	//ハンマー㏋吸収
 	static constexpr float kMagnumHpCost_ = 5.0f;
 	static constexpr float kHammerBaseHeal_ = 3.0f;
 	static constexpr float kHammerHealPerTurn_ = 2.0f;
@@ -99,7 +109,11 @@ private:
 
 	int dodgeFrame_ = 0;// 回避開始からの経過フレーム
 	int dodgeDirection_ = 1;// 回避方向（左 -1、右 1）
-	static constexpr int kDodgeFrame_ = 16;// 回避の長さ
+	static constexpr int kDodgeFrame_ = 20;// 回避の長さ
+	static constexpr int kPerfectDodgeFrames_ = 8;// ジャスト回避の受付時間
+	bool perfectDodgeTriggered_ = false;// 今回の回避で成功したか
+	bool perfectDodgePending_ = false; // mainにまだ伝えていない成功通知
+	int perfectDodgeCount_ = 0;// 確認用の成功回数
 	static constexpr float kDodgeSpeed_ = 9.0f;// 1フレームの横移動量
 
 
@@ -132,8 +146,8 @@ private:
 	static constexpr int kMaxHammerTurns_ = 3;
 
 	static constexpr float kHammerReach_ = 72.0f;// 手元からヘッドまで
-	static constexpr float kHeadRadius_ = 16.0f;
-	static constexpr float kHeadSpacing_ = 14.0f;
+	static constexpr float kHeadRadius_ = 16.0f;//ハンマーの頭の大きさ
+	static constexpr float kHeadSpacing_ = 16.0f;//柄の長さ
 
 	int hammerTurns_ = 0;
 	float hammerTurnAngle_ = 0.0f;
