@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #include "Vector2.h"
 #include "Cooldown.h"
 
@@ -20,66 +20,73 @@ enum class EnemyState {
 
 struct BossParts
 {
-	int armorTexture; // –hŒì‚ÌƒeƒNƒXƒ`ƒƒ
-	int bodyTexture;  // ¶g‚ÌƒeƒNƒXƒ`ƒƒ
+	int armorTexture; // é˜²è­·ã®ãƒ†ã‚¯ã‚¹ãƒãƒ£
+	int bodyTexture;  // ç”Ÿèº«ã®ãƒ†ã‚¯ã‚¹ãƒãƒ£
 
-	bool isAlive;       // •”ˆÊ‚ª¶‚«‚Ä‚¢‚é‚©
-	bool isArmorNotBroken; // ‘•b‚ª‰ó‚ê‚Ä‚¢‚È‚¢‚©
+	bool isAlive;       // éƒ¨ä½ãŒç”Ÿãã¦ã„ã‚‹ã‹
+	bool isArmorNotBroken; // è£…ç”²ãŒå£Šã‚Œã¦ã„ãªã„ã‹
 
-	Vector2 position;      // 	ÅI“I‚È•`‰æˆÊ’u
-	Vector2 localPosition; // e‚©‚ç‚Ì‘Š‘ÎˆÊ’u
-	Vector2 baseLocalPosition; //Šî€‚Æ‚È‚éˆÊ’u(“®‚«‚ÌÅ‰‚ÌˆÊ’u‚ÌŠî€)
+	Vector2 position;      // 	æœ€çµ‚çš„ãªæç”»ä½ç½®
+	Vector2 localPosition; // è¦ªã‹ã‚‰ã®ç›¸å¯¾ä½ç½®
+	Vector2 baseLocalPosition; //åŸºæº–ã¨ãªã‚‹ä½ç½®(å‹•ãã®æœ€åˆã®ä½ç½®ã®åŸºæº–)
 
-	float angle;           // ÅI“I‚È•`‰æŠp“xiƒ[ƒ‹ƒhŠp“xj
-	float localAngle;      // e‚©‚ç‚Ì‘Š‘ÎŠp“xiŠÖß‚ğ‹È‚°‚éŠp“xj
+	float angle;           // æœ€çµ‚çš„ãªæç”»è§’åº¦ï¼ˆãƒ¯ãƒ¼ãƒ«ãƒ‰è§’åº¦ï¼‰
+	float localAngle;      // è¦ªã‹ã‚‰ã®ç›¸å¯¾è§’åº¦ï¼ˆé–¢ç¯€ã‚’æ›²ã’ã‚‹è§’åº¦ï¼‰
 	float length;
 
 
 	int parentIndex;
 
+	//ãƒœã‚¹ã®çŠ¶æ…‹
+	int hp ;
+	int maxHp;
+	int armorHp ;
+	int maxArmorHp ;
+	bool isWeakPoint ; // é ­ãªã©ã®æ€¥æ‰€ãƒ•ãƒ©ã‚°ï¼ˆå¿…è¦ãªã‚‰ï¼‰
+
 };
-const int kbossparts = 13;//ƒ{ƒX‚Ì•”ˆÊ
+const int kbossparts = 14;//ãƒœã‚¹ã®éƒ¨ä½
 class Enemy
 {
 public:
-	// ‰Šú‰»
+	// åˆæœŸåŒ–
 	void Initialize();
 
-	// XV
+	// æ›´æ–°
 	void Update();
 
-	// •`‰æ
+	// æç”»
 	void Draw()const;
-	//ˆÚ“®
+	//ç§»å‹•
 	void Move(const Vector2& delta);
 
 	void Attack(EnemyAtteck attack);
 
 private:
-	Vector2 worldPosition_ = { 0.0f, 0.0f };//ƒ[ƒ‹ƒhÀ•W
+	Vector2 worldPosition_ = { 0.0f, 0.0f };//ãƒ¯ãƒ¼ãƒ«ãƒ‰åº§æ¨™
 
-	Vector2 velocity_ = { 0.0f, 0.0f };//‘¬“x
+	Vector2 velocity_ = { 0.0f, 0.0f };//é€Ÿåº¦
 
-	Vector2 localPosition_ = { 0.0f, 0.0f };//e‚©‚ç‚Ì‘Š‘ÎÀ•W
+	Vector2 localPosition_ = { 0.0f, 0.0f };//è¦ªã‹ã‚‰ã®ç›¸å¯¾åº§æ¨™
 
-	float localAngle = 0.0f; // e‚©‚ç‚Ì‘Š‘ÎŠp“x
+	float localAngle = 0.0f; // è¦ªã‹ã‚‰ã®ç›¸å¯¾è§’åº¦
 
 	BossParts parts_[kbossparts] = {};
 
 	float animTimer_ = 0.0f;
 
-	// s“®ó‘Ô
+	// è¡Œå‹•çŠ¶æ…‹
 	EnemyState state_ = EnemyState::Idle;
 
-	// UŒ‚í—Ş
+	// æ”»æ’ƒç¨®é¡
 	EnemyAtteck currentAttack_ = EnemyAtteck::Normal;
 
-	// UŒ‚ƒN[ƒ‹ƒ_ƒEƒ“
+	// æ”»æ’ƒã‚¯ãƒ¼ãƒ«ãƒ€ã‚¦ãƒ³
 	Cooldown attackCooldown_{ 120 };
 
-	// UŒ‚ƒAƒjƒ[ƒVƒ‡ƒ“ƒ^ƒCƒ}[
+	// æ”»æ’ƒã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³ã‚¿ã‚¤ãƒãƒ¼
 	float attackTimer_ = 0.0f;
 
-
+	float speed = 2.5f;
 };
 

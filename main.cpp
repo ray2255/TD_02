@@ -1,5 +1,6 @@
 #include <Novice.h>
 #include <Windows.h>
+#include "Enemy.h"
 
 const char kWindowTitle[] = "LC1C_07_クギヤマ_ソラ_タイトル";
 
@@ -23,6 +24,13 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	char keys[256] = { 0 };
 	char preKeys[256] = { 0 };
 
+	// Enemy生成
+	Enemy enemy;
+
+	// 初期化
+	enemy.Initialize();
+
+
 	// ウィンドウの×ボタンが押されるまでループ
 	while (Novice::ProcessMessage() == 0) {
 
@@ -36,7 +44,18 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 		///
 		/// ↓更新処理ここから
 		///
-		
+		if (keys[DIK_B] && preKeys[DIK_B] == 0) {
+			enemy.Attack(EnemyAtteck::bite);
+		}
+		if (keys[DIK_V] && preKeys[DIK_V] == 0) {
+			enemy.Attack(EnemyAtteck::Tellslam);
+		}
+		if (keys[DIK_N] && preKeys[DIK_N] == 0) {
+			enemy.Attack(EnemyAtteck::Rush);
+		}
+
+		// Enemy更新
+		enemy.Update();
 		///
 		/// ↑更新処理ここまで
 		///
@@ -45,7 +64,8 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 		/// ↓描画処理ここから
 		///
 
-		
+		enemy.Draw();
+
 
 		///
 		/// ↑描画処理ここまで

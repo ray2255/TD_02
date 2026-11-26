@@ -1,23 +1,23 @@
-#include "Enemy.h"
+ï»¿#include "Enemy.h"
 #include "Cooldown.h"
 #include <Novice.h>
 #define _USE_MATH_DEFINES
 #include <math.h>
 
 void Enemy::Initialize() {
-	// ‰Šú‰»ˆ—
+	// åˆæœŸåŒ–å‡¦ç†
 	worldPosition_ = { 440.0f, 260.0f };
 	localPosition_ = { 0.0f, 0.0f };
 	velocity_ = { 0.0f, 0.0f };
 	localAngle = 0.0f;
 	animTimer_ = 0.0f;
 
-
-	// ó‘Ô‚Æƒ^ƒCƒ}[‚Ì‰Šú‰»‚ğ’Ç‰Á
+	
+	// çŠ¶æ…‹ã¨ã‚¿ã‚¤ãƒãƒ¼ã®åˆæœŸåŒ–ã‚’è¿½åŠ 
 	state_ = EnemyState::Idle;
 	currentAttack_ = EnemyAtteck::Normal;
 	attackTimer_ = 0.0f;
-	// ƒ{ƒX‚Ì•”ˆÊ‚Ì‰Šú‰»
+	// ãƒœã‚¹ã®éƒ¨ä½ã®åˆæœŸåŒ–
 	for (int i = 0; i < kbossparts; ++i) {
 		parts_[i].isAlive = true;
 		parts_[i].isArmorNotBroken = true;
@@ -25,12 +25,18 @@ void Enemy::Initialize() {
 		parts_[i].localPosition = { 0.0f, 0.0f };
 		parts_[i].angle = 0.0f;
 		parts_[i].localAngle = 0.0f;
+		worldPosition_.x = 800;
+		//ä½“åŠ›ã®åˆæœŸåŒ–
+		parts_[i].maxHp = 1000;
+		parts_[i].hp = parts_[i].maxHp;
+		parts_[i].maxArmorHp = 300;
+		parts_[i].armorHp = parts_[i].maxArmorHp;
 	}
 	int activeParts[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 12 };
 	for (int idx : activeParts) {
 		parts_[idx].isAlive = true;
 	}
-	// ƒeƒNƒXƒ`ƒƒ“Ç‚İ‚İ
+	// ãƒ†ã‚¯ã‚¹ãƒãƒ£èª­ã¿è¾¼ã¿
 	parts_[0].bodyTexture = Novice::LoadTexture("./Resources/images/enemy/Body.png");
 	parts_[1].bodyTexture = Novice::LoadTexture("./Resources/images/enemy/neck.png");
 	parts_[2].bodyTexture = Novice::LoadTexture("./Resources/images/enemy/neck.png");
@@ -41,22 +47,33 @@ void Enemy::Initialize() {
 	parts_[7].bodyTexture = Novice::LoadTexture("./Resources/images/enemy/rexTail1.png");
 	parts_[8].bodyTexture = Novice::LoadTexture("./Resources/images/enemy/rexArm1.png");
 	parts_[9].bodyTexture = Novice::LoadTexture("./Resources/images/enemy/enemyArm2.png");
-	//parts_[10].bodyTexture = Novice::LoadTexture("./Resources/images/enemy/rexArm1.png");
-	//parts_[11].bodyTexture = Novice::LoadTexture("./Resources/images/enemy/enemyArm.png");
+	parts_[10].bodyTexture = Novice::LoadTexture("./Resources/images/enemy/rexArm1.png");
+	parts_[11].bodyTexture = Novice::LoadTexture("./Resources/images/enemy/enemyArm2.png");
 	parts_[12].bodyTexture = Novice::LoadTexture("./Resources/images/enemy/rexFoot.png");
+	parts_[13].bodyTexture = Novice::LoadTexture("./Resources/images/enemy/rexFoot.png");
 
-	//ƒA[ƒ}[
+	//ã‚¢ãƒ¼ãƒãƒ¼
 	parts_[0].armorTexture = Novice::LoadTexture("./Resources/images/enemy/rexTorso.png");
+	parts_[1].armorTexture = Novice::LoadTexture("./Resources/images/enemy/rexNeckarmer.png");
+	parts_[2].armorTexture = Novice::LoadTexture("./Resources/images/enemy/rexNeckarmer.png");
 	parts_[3].armorTexture = Novice::LoadTexture("./Resources/images/enemy/rexhelm.png");
 	parts_[4].armorTexture = Novice::LoadTexture("./Resources/images/enemy/rexagithelm.png");
+	parts_[5].armorTexture = Novice::LoadTexture("./Resources/images/enemy/rexTailarmer2.png");
+	parts_[6].armorTexture = Novice::LoadTexture("./Resources/images/enemy/rexTailarmer4.png");
+	parts_[7].armorTexture = Novice::LoadTexture("./Resources/images/enemy/rexTailarmer3.png");
 	parts_[8].armorTexture = Novice::LoadTexture("./Resources/images/enemy/rexGauntret1.png");
+	parts_[9].armorTexture = Novice::LoadTexture("./Resources/images/enemy/Gauntret.png");
+	parts_[10].armorTexture = Novice::LoadTexture("./Resources/images/enemy/rexGauntret1.png");
+	parts_[11].armorTexture = Novice::LoadTexture("./Resources/images/enemy/Gauntret.png");
+	parts_[12].armorTexture = Novice::LoadTexture("./Resources/images/enemy/rexregins.png");
+	parts_[13].armorTexture = Novice::LoadTexture("./Resources/images/enemy/rexregins.png");
 
 
 	parts_[0].parentIndex = -1;
 	parts_[0].baseLocalPosition = { 0.0f, 0.0f };
 	parts_[0].localPosition = parts_[0].localPosition;
 
-	// ñE“ªEƒAƒS
+	// é¦–ãƒ»é ­ãƒ»ã‚¢ã‚´
 	parts_[1].parentIndex = 0;
 	parts_[1].baseLocalPosition = { 50.0f, 20.0f };
 	parts_[1].localPosition = parts_[1].baseLocalPosition;
@@ -74,7 +91,7 @@ void Enemy::Initialize() {
 	parts_[4].baseLocalPosition = { 0.0f, 0.0f };
 	parts_[4].localPosition = parts_[4].baseLocalPosition;
 
-	// K”ö
+	// å°»å°¾
 	parts_[5].parentIndex = 0;
 	parts_[5].baseLocalPosition = { -350.0f, 40.0f };
 	parts_[5].localPosition = parts_[5].baseLocalPosition;
@@ -87,29 +104,32 @@ void Enemy::Initialize() {
 	parts_[7].baseLocalPosition = { -160.0f, 0.0f };
 	parts_[7].localPosition = parts_[7].baseLocalPosition;
 
-	// ‰E‘O‹r
+	// å³å‰è„š
 	parts_[8].parentIndex = 0;
-	parts_[8].baseLocalPosition = { -50.0f, -10.0f };
+	parts_[8].baseLocalPosition = { -50.0f, 50.0f };
 	parts_[8].localPosition = parts_[8].baseLocalPosition;
 
 	parts_[9].parentIndex = 8;
 	parts_[9].baseLocalPosition = { 0.0f, -55.0f };
 	parts_[9].localPosition = parts_[9].baseLocalPosition;
 
-	// ¶‘O‹r
-	//parts_[10].parentIndex = 0;
-	//parts_[10].localPosition = { 120.0f, 10.0f };
+	// å·¦å‰è„š
+	parts_[10].parentIndex = 0;
+	parts_[10].baseLocalPosition = { -50.0f, 50.0f };
+	parts_[10].localPosition = parts_[8].baseLocalPosition;
 
-	//parts_[11].parentIndex = 10;
-	//parts_[11].localPosition = { 0.0f, -55.0f };
+	parts_[11].parentIndex = 10;
+	parts_[11].baseLocalPosition = { 0.0f, -55.0f };
+	parts_[11].localPosition = parts_[9].baseLocalPosition;
 
-	// Œã‹r
+	// å¾Œè„š
 	parts_[12].parentIndex = 0;
-	parts_[12].baseLocalPosition = { -200.0f, 0.0f };
+	parts_[12].baseLocalPosition = { -170.0f, 80.0f };
 	parts_[12].localPosition = parts_[12].baseLocalPosition;
 
-	//parts_[13].parentIndex = 12;
-	//parts_[13].localPosition = { -90.0f, -35.0f };
+	parts_[13].parentIndex = 0;
+	parts_[13].baseLocalPosition = { -220.0f, 80.0f };
+	parts_[13].localPosition = parts_[13].baseLocalPosition;
 }
 
 void Enemy::Move(const Vector2& delta) {
@@ -122,22 +142,62 @@ void Enemy::Attack(EnemyAtteck attack) {
 		return;
 	}
 
-	// UŒ‚í—Ş‚ğİ’è
+	// æ”»æ’ƒç¨®é¡ã‚’è¨­å®š
 	currentAttack_ = attack;
 
-	// UŒ‚ó‘Ô‚É‚·‚é
+	// æ”»æ’ƒçŠ¶æ…‹ã«ã™ã‚‹
 	state_ = EnemyState::Attack;
 
-	// UŒ‚ƒ^ƒCƒ}[‚ğƒŠƒZƒbƒg
+	// æ”»æ’ƒã‚¿ã‚¤ãƒãƒ¼ã‚’ãƒªã‚»ãƒƒãƒˆ
 	attackTimer_ = 0.0f;
 
-	// ƒN[ƒ‹ƒ_ƒEƒ“ŠJn
+	// ã‚¯ãƒ¼ãƒ«ãƒ€ã‚¦ãƒ³é–‹å§‹
 	attackCooldown_.Start();
 }
 
 void Enemy::Draw() const {
+
+	for (int i = 10; i <= 12; ++i) {
+
+		Novice::DrawSprite(
+			(int)parts_[i].position.x,
+			(int)parts_[i].position.y,
+			parts_[i].bodyTexture,
+			1.0f, 1.0f,
+			parts_[i].angle,
+			0xFFFFFFFF
+		);
+		Novice::DrawSprite(
+			(int)parts_[i].position.x,
+			(int)parts_[i].position.y,
+			parts_[i].armorTexture,
+			1.0f, 1.0f,
+			parts_[i].angle,
+			0xFFFFFFFF
+		);
+
+
+
+	}
+	Novice::DrawSprite(
+		(int)parts_[13].position.x,
+		(int)parts_[13].position.y,
+		parts_[13].bodyTexture,
+		1.0f, 1.0f,
+		parts_[13].angle,
+		0xFFFFFFFF
+	);
+	Novice::DrawSprite(
+		(int)parts_[13].position.x,
+		(int)parts_[13].position.y,
+		parts_[13].armorTexture,
+		1.0f, 1.0f,
+		parts_[13].angle,
+		0xFFFFFFFF
+	);
+
 	for (int i = 0; i < kbossparts; ++i) {
-		if (!parts_[i].isAlive) {
+		if (i == 13 ||i==10||i==11|| !parts_[i].isAlive) {
 			continue;
 		}
 
@@ -149,19 +209,28 @@ void Enemy::Draw() const {
 			parts_[i].angle,
 			0xFFFFFFFF
 		);
+		Novice::DrawSprite(
+			(int)parts_[i].position.x,
+			(int)parts_[i].position.y,
+			parts_[i].armorTexture,
+			1.0f, 1.0f,
+			parts_[i].angle,
+			0xFFFFFFFF
+		);
+
 	}
 }
 
 void Enemy::Update() {
 	attackCooldown_.Update();
 
-	// 1. æ‚Éuƒ[ƒJƒ‹À•WEŠp“xv‚ğXV‚·‚é
+	// 1. å…ˆã«ã€Œãƒ­ãƒ¼ã‚«ãƒ«åº§æ¨™ãƒ»è§’åº¦ã€ã‚’æ›´æ–°ã™ã‚‹
 	if (state_ != EnemyState::Attack) {
 		static float timer = 0.0f;
 		timer += 0.03f;
 
-		float walk = sinf(timer * 2.0f);
-		// Šî€‚ÌˆÊ’u + sinf(ƒ^ƒCƒ}[ * ‘¬‚³) * “®‚«‚Ì‘å‚«‚³
+		
+		// åŸºæº–ã®ä½ç½® + sinf(ã‚¿ã‚¤ãƒãƒ¼ * é€Ÿã•) * å‹•ãã®å¤§ãã•
 		parts_[0].localPosition.y = -sinf(timer * 4.0f) * 5.0f;
 		parts_[0].localAngle = sinf(timer * 2.0f) * 0.03f;
 
@@ -177,33 +246,37 @@ void Enemy::Update() {
 		parts_[8].localAngle = -sinf(timer * 2.0f) * 0.8f;
 		parts_[9].localAngle = -sinf(timer * 2.0f) * 0.3f;
 
-		parts_[12].localAngle = walk * 0.2f;
+		parts_[10].localAngle = sinf(timer * 2.0f) * 0.8f;
+		parts_[11].localAngle = sinf(timer * 2.0f) * 0.3f;
+		//è¶³
+		parts_[12].localAngle = sinf(timer * 2.0f) * 0.2f;
+		parts_[13].localAngle = -sinf(timer * 2.0f) * 0.2f;
 	}
 	else {
-		// UŒ‚’†‚Ìƒ[ƒJƒ‹À•WEŠp“x‚ÌXV
+		// æ”»æ’ƒä¸­ã®ãƒ­ãƒ¼ã‚«ãƒ«åº§æ¨™ãƒ»è§’åº¦ã®æ›´æ–°
 		attackTimer_ += 0.02f;
 
 		switch (currentAttack_) {
 		case EnemyAtteck::bite:
-			// ¦uŒ³‚ÌˆÊ’uv‚Í•Ï‚¦‚¸AŒã‚ë‚Ìu* ”šiL‚Ñ‚é•jv‚ğ‘å‚«‚­‚·‚éI
-			// ¦ 3.0f ‚ğ (float)M_PI ‚É‚·‚é‚ÆAI‚í‚Á‚½uŠÔ‚Éƒsƒbƒ^ƒŠŒ³‚ÌˆÊ’u‚É’…’n‚µ‚Ü‚·
+			// â€»ã€Œå…ƒã®ä½ç½®ã€ã¯å¤‰ãˆãšã€å¾Œã‚ã®ã€Œ* æ•°å­—ï¼ˆä¼¸ã³ã‚‹å¹…ï¼‰ã€ã‚’å¤§ããã™ã‚‹ï¼
+			// â€» 3.0f ã‚’ (float)M_PI ã«ã™ã‚‹ã¨ã€çµ‚ã‚ã£ãŸç¬é–“ã«ãƒ”ãƒƒã‚¿ãƒªå…ƒã®ä½ç½®ã«ç€åœ°ã—ã¾ã™
 
-			// 1. ñ‚ÌªŒ³‚ğ­‚µ¶‰º‚ÉL‚Î‚·
+			// 1. é¦–ã®æ ¹å…ƒã‚’å°‘ã—å·¦ä¸‹ã«ä¼¸ã°ã™
 			parts_[1].localPosition.x = parts_[1].baseLocalPosition.x + sinf(attackTimer_ * (float)M_PI) * 40.0f;
 			parts_[1].localPosition.y = parts_[1].baseLocalPosition.y + sinf(attackTimer_ * (float)M_PI) * 25.0f;
 
-			// 2. ñ‚Ìæ‚à‚³‚ç‚É¶‰º‚ÉL‚Î‚·
+			// 2. é¦–ã®å…ˆã‚‚ã•ã‚‰ã«å·¦ä¸‹ã«ä¼¸ã°ã™
 			parts_[2].localPosition.x = parts_[2].baseLocalPosition.x + sinf(attackTimer_ * (float)M_PI) * 45.0f;
 			parts_[2].localPosition.y = parts_[2].baseLocalPosition.y + sinf(attackTimer_ * (float)M_PI) * 25.0f;
 
-			// 3. “ª‚à¶‰º‚ÉL‚Î‚·
+			// 3. é ­ã‚‚å·¦ä¸‹ã«ä¼¸ã°ã™
 			parts_[3].localPosition.x = parts_[3].baseLocalPosition.x + sinf(attackTimer_ * (float)M_PI) * 55.0f;
 			parts_[3].localPosition.y = parts_[3].baseLocalPosition.y + sinf(attackTimer_ * (float)M_PI) * 30.0f;
 
-			// 4. ‰ºƒAƒS‚ğŠJ•Â‚·‚é
+			// 4. ä¸‹ã‚¢ã‚´ã‚’é–‹é–‰ã™ã‚‹
 			parts_[4].localAngle = sinf(attackTimer_ * (float)M_PI) * 0.6f;
 
-			// UŒ‚I—¹
+			// æ”»æ’ƒçµ‚äº†
 			if (attackTimer_ >= 1.0f) {
 				state_ = EnemyState::Idle;
 				currentAttack_ = EnemyAtteck::Normal;
@@ -224,11 +297,14 @@ void Enemy::Update() {
 
 
 
-		case EnemyAtteck::Tellslam:
-			float speed = 2.5f; // 2”{‘¬‚É‚·‚é—á
+		case EnemyAtteck::Tellslam: 
+			
 			parts_[5].localAngle = sinf(attackTimer_ * speed * (float)M_PI) * -0.30f;
 			parts_[6].localAngle = sinf(attackTimer_ * speed * (float)M_PI - 0.4f) * -0.34f;
 			parts_[7].localAngle = sinf(attackTimer_ * speed * (float)M_PI - 0.8f) * -0.38f;
+
+
+
 			if (attackTimer_ >= 1.26f) {
 				state_ = EnemyState::Idle;
 				currentAttack_ = EnemyAtteck::Normal;
@@ -238,54 +314,92 @@ void Enemy::Update() {
 
 			}
 
+			break;
+		
+		case EnemyAtteck::Rush: 
 
+			float rushTime = attackTimer_ - 0.4f;
+			float runSpeed = 9.0f; // è…•ãƒ»è„šã®å›è»¢é€Ÿåº¦ï¼ˆãŠå¥½ã¿ã§èª¿æ•´ï¼‰
+			float cycle = rushTime * runSpeed;
+
+			parts_[0].localPosition.y = -sinf(attackTimer_ * (float)M_PI) * 5.0f;
+			parts_[0].localAngle = sinf(attackTimer_ * (float)M_PI) * 0.03f;
+
+			parts_[8].localAngle = -sinf(attackTimer_ * speed * (float)M_PI) * 0.8f;
+			parts_[9].localAngle = -sinf(attackTimer_ * speed * (float)M_PI) * 0.3f;
+
+			parts_[10].localAngle = sinf(attackTimer_ * speed * (float)M_PI) * 0.8f;
+			parts_[11].localAngle = sinf(attackTimer_ * speed * (float)M_PI) * 0.3f;
+			//è¶³
+			parts_[12].localAngle = sinf(attackTimer_ * speed * (float)M_PI) * 0.25f;
+			parts_[13].localAngle = -sinf(attackTimer_ * speed * (float)M_PI) * 0.25f;
+
+			
+
+			parts_[1].localAngle = 0.1f + sinf(cycle * 2.0f) * 0.03f;
+			parts_[2].localAngle = 0.1f + sinf(cycle * 2.0f - 0.3f) * 0.04f;
+			parts_[3].localAngle = sinf(cycle * 2.0f - 0.6f) * 0.05f;
+
+			parts_[5].localAngle = (15.0f * (float)M_PI / 180.0f) + sinf(attackTimer_ *1.2f * (float)M_PI) * 0.12f;
+			parts_[6].localAngle = sinf(attackTimer_ * 1.2f * (float)M_PI - 0.4f) * 0.16f;
+			parts_[7].localAngle = sinf(attackTimer_ * 1.2f * (float)M_PI - 0.8f) * 0.20f;
+
+			parts_[4].localAngle = 0.5f;
+
+
+			
+			if (attackTimer_ >= 3.00f) {
+				state_ = EnemyState::Idle;
+				currentAttack_ = EnemyAtteck::Normal;
+				attackTimer_ = 0.0f;
+				parts_[4].localAngle = 0.0f;
+			}
 
 			break;
-
 		}
 	}
 
-	// 2. ÅŒã‚ÉeqŠÖŒW‚ğŒvZ‚µ‚Ä•`‰æÀ•Wiposition / anglej‚ğŠm’è‚³‚¹‚é
+	// 2. æœ€å¾Œã«è¦ªå­é–¢ä¿‚ã‚’è¨ˆç®—ã—ã¦æç”»åº§æ¨™ï¼ˆposition / angleï¼‰ã‚’ç¢ºå®šã•ã›ã‚‹
 	for (int i = 0; i < kbossparts; ++i) {
 		if (!parts_[i].isAlive) {
 			continue;
 		}
 
 		int parent = parts_[i].parentIndex;
-		//“·‘Ì
+		//èƒ´ä½“
 		if (parent == -1) {
 			parts_[i].angle = -parts_[i].localAngle;
 			parts_[i].position.x = worldPosition_.x - parts_[i].localPosition.x;
 			parts_[i].position.y = worldPosition_.y + parts_[i].localPosition.y;
 		}
-		//‚»‚êˆÈŠO
+		//ãã‚Œä»¥å¤–
 		else {
-			// e‚ÌŒX‚«‚ÉA©•ª‚Ì‹È‚°Šp“x‚ğ‘«‚µ‡‚í‚¹‚é
+			// è¦ªã®å‚¾ãã«ã€è‡ªåˆ†ã®æ›²ã’è§’åº¦ã‚’è¶³ã—åˆã‚ã›ã‚‹
 			parts_[i].angle = parts_[parent].angle - parts_[i].localAngle;
 
-			// e‚ª‰ñ“]‚µ‚½•ª‚¾‚¯ŠÖß‚ÌˆÊ’u‚àˆê‚É‰ñ‚·‚½‚ß‚ÌƒTƒCƒ“EƒRƒTƒCƒ“
+			// è¦ªãŒå›è»¢ã—ãŸåˆ†ã ã‘é–¢ç¯€ã®ä½ç½®ã‚‚ä¸€ç·’ã«å›ã™ãŸã‚ã®ã‚µã‚¤ãƒ³ãƒ»ã‚³ã‚µã‚¤ãƒ³
 			float c = cosf(parts_[parent].angle);
 			float s = sinf(parts_[parent].angle);
 
-			// e‚ÌŒ»İ’n‚ğŠî€‚ÉA‰ñ“]‚³‚¹‚½ƒYƒŒilocalPositionj‚ğ‘«‚µˆø‚«‚µ‚ÄÀ•W‚ğŠm’è‚³‚¹‚é
-			// i¦X²‚Í¶Œü‚«‚ğƒvƒ‰ƒX‚Æ‚·‚éÀ•WŒn‚Ì‚½‚ßˆø‚«Z‚É‚È‚Á‚Ä‚¢‚éj
+			// è¦ªã®ç¾åœ¨åœ°ã‚’åŸºæº–ã«ã€å›è»¢ã•ã›ãŸã‚ºãƒ¬ï¼ˆlocalPositionï¼‰ã‚’è¶³ã—å¼•ãã—ã¦åº§æ¨™ã‚’ç¢ºå®šã•ã›ã‚‹
+			// ï¼ˆâ€»Xè»¸ã¯å·¦å‘ãã‚’ãƒ—ãƒ©ã‚¹ã¨ã™ã‚‹åº§æ¨™ç³»ã®ãŸã‚å¼•ãç®—ã«ãªã£ã¦ã„ã‚‹ï¼‰
 			parts_[i].position.x = parts_[parent].position.x - (parts_[i].localPosition.x * c + parts_[i].localPosition.y * s);
 			parts_[i].position.y = parts_[parent].position.y + (-parts_[i].localPosition.x * s + parts_[i].localPosition.y * c);
 		}
 	}
-	//‚ ‚²‚Ì‚¸‚ê’¼‚µ
-	// ‰ºƒAƒS(parts_[4])‚Ì‰ñ“]²‚ğu‰æ‘œ‚Ì¶ãv‚©‚çuƒAƒS‚Ì•t‚¯ªv‚Ö‚¸‚ç‚·
+	//ã‚ã”ã®ãšã‚Œç›´ã—
+	// ä¸‹ã‚¢ã‚´(parts_[4])ã®å›è»¢è»¸ã‚’ã€Œç”»åƒã®å·¦ä¸Šã€ã‹ã‚‰ã€Œã‚¢ã‚´ã®ä»˜ã‘æ ¹ã€ã¸ãšã‚‰ã™
 	if (parts_[4].isAlive) {
-		// ‰æ‘œ‚Ì¶ã(0,0)‚©‚çŒ©‚½uƒAƒS‚ÌŠÖßi‰ñ“]‚³‚¹‚½‚¢’†Sjv‚ÌƒsƒNƒZƒ‹À•W
+		// ç”»åƒã®å·¦ä¸Š(0,0)ã‹ã‚‰è¦‹ãŸã€Œã‚¢ã‚´ã®é–¢ç¯€ï¼ˆå›è»¢ã•ã›ãŸã„ä¸­å¿ƒï¼‰ã€ã®ãƒ”ã‚¯ã‚»ãƒ«åº§æ¨™
 		const Vector2 jawPivot = { 180.0f, 120.0f };
 
-		// ei“ªFparts_[3]j‚Ì‰ñ“]‚É‡‚í‚¹‚½uŠÖß‚Ìƒ[ƒ‹ƒhÀ•Wv‚ğŒvZ
+		// è¦ªï¼ˆé ­ï¼šparts_[3]ï¼‰ã®å›è»¢ã«åˆã‚ã›ãŸã€Œé–¢ç¯€ã®ãƒ¯ãƒ¼ãƒ«ãƒ‰åº§æ¨™ã€ã‚’è¨ˆç®—
 		float c3 = cosf(parts_[3].angle);
 		float s3 = sinf(parts_[3].angle);
 		float jointWorldX = parts_[3].position.x + (jawPivot.x * c3 - jawPivot.y * s3);
 		float jointWorldY = parts_[3].position.y + (jawPivot.x * s3 + jawPivot.y * c3);
 
-		// ‰ºƒAƒSiparts_[4]j‚ğ‰ñ“]‚³‚¹‚½‚Æ‚«AŠÖßˆÊ’u‚ªƒYƒŒ‚È‚¢‚æ‚¤‚É¶ãÀ•W‚ğ‹tZ
+		// ä¸‹ã‚¢ã‚´ï¼ˆparts_[4]ï¼‰ã‚’å›è»¢ã•ã›ãŸã¨ãã€é–¢ç¯€ä½ç½®ãŒã‚ºãƒ¬ãªã„ã‚ˆã†ã«å·¦ä¸Šåº§æ¨™ã‚’é€†ç®—
 		float c4 = cosf(parts_[4].angle);
 		float s4 = sinf(parts_[4].angle);
 		parts_[4].position.x = jointWorldX - (jawPivot.x * c4 - jawPivot.y * s4);
