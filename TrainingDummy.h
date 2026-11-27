@@ -12,6 +12,7 @@ public:
 	bool DamageBody(int damage);
 
 
+
 	Vector2 GetPosition() const
 	{
 		return position_;
@@ -24,6 +25,10 @@ public:
 
 	bool IsArmorBreak()	const {
 		return armorHp_ <= 0;
+	}
+
+	bool IsDefeated()const {
+		return bodyHp_ <= 0;
 	}
 
 private:

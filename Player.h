@@ -63,6 +63,10 @@ public:
 
 	void LoadTextures();
 
+	bool IsDead()const {
+		return state_ == PlayerState::Dead;
+	}
+
 private:
 	PlayerState state_ = PlayerState::Normal;//初期状態
 
@@ -84,6 +88,9 @@ private:
 	static constexpr float kMagnumHpCost_ = 5.0f;
 	static constexpr float kHammerBaseHeal_ = 3.0f;
 	static constexpr float kHammerHealPerTurn_ = 2.0f;
+	static constexpr int kHealEffectFrames_ = 36;
+	int healEffectTime_ = 0;
+	
 
 	bool isGrounded_ = false;//地面に接地しているかどうか	
 

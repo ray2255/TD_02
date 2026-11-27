@@ -100,6 +100,15 @@ void Player::Initialize() {
 
 	hammerHitStopTimer_ = 0;
 
+	healEffectTime_ = 0;
+
+	invincibleTimer_ = 0;
+
+	hammerTurns_ = 0;
+
+	hammerTurnAngle_ = 0.0f;
+
+
 }
 void Player::LoadTextures()
 {
@@ -118,7 +127,10 @@ void Player::Update(const char* keys, const char* preKeys, float worldSpeed, boo
 	{
 		invincibleTimer_--;
 	}
-
+	if (healEffectTime_ > 0)
+	{
+		--healEffectTime_;
+	}
 	//マウス入力
 	Novice::GetMousePosition(&mouseX_, &mouseY_);
 	bool isLeftMouseDown = Novice::IsPressMouse(0) != 0;
@@ -540,7 +552,12 @@ void Player::HealFromHammerHit() {
 	}
 
 	const float healAmount = kHammerBaseHeal_ + kHammerHealPerTurn_ * static_cast<float>(hammerTurns_);
+	const float hpBefore = hp_;
 	hp_ = std::fmin(hp_ + healAmount, maxHp_);
+	if (hp_>hpBefore)
+	{
+		healEffectTime_ = kHealEffectFrames_;
+	}
 }
 
 Vector2 Player::GetHammerHeadPoint(int index) const
@@ -815,6 +832,36 @@ void Player::Draw()const {
 		DrawPart(bulletTexture_, 50, 50,
 			{ 25.0f, 25.0f }, bullets_[i].position,
 			0.50f, 0.50f, bulletAngle);
+	}
+
+	if (healEffectTime_ > 0)
+	{
+		const float t = 1.0f - static_cast<float>(healEffectTime_) / static_cast<float>(kHealEffectFrames_);
+
+		const float fade = std::sin(t * 3.14f);
+		const unsigned int alpha = static_cast<unsigned int>(fade * fade * 230.0f);
+		const unsigned int color= 0x68FF95'00u | alpha;
+
+		const float centerX = position_.x + size_.x * 0.5f;
+		const float footY = position_.y + size_.y;
+		const float rise = 18.0f * t;
+
+		const Vector2 offsets[] = {
+		{ -27.0f, -40.0f },
+		{  25.0f, -60.0f },
+		{ -20.0f, -85.0f },
+		{  17.0f, -26.0f }
+		};
+
+		for (const Vector2& offset : offsets)
+		{
+			const int x = static_cast<int>(centerX + offset.x);
+			const int y = static_cast<int>(footY + offset.y - rise);
+
+			Novice::DrawBox(x - 6, y - 2, 12, 4, 0.0f, color, kFillModeSolid);
+			Novice::DrawBox(x - 2, y - 6, 4, 12, 0.0f, color, kFillModeSolid);
+		}
+
 	}
 
 

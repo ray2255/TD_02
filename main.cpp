@@ -2,11 +2,23 @@
 #include "Player.h"
 #include "TrainingDummy.h"
 #include <cmath>
+#include <cstring>
 #ifdef USE_IMGUI
 #include <imgui.h>
 #endif
 
 const char kWindowTitle[] = "LC1C_07_クギヤマ_ソラ_タイトル";
+
+enum class GameScene
+{
+	Title,
+	Training,
+	BossBattle,
+	Victory,
+	Defeat
+};
+
+
 
 //スローモーションの視覚効果
 void DrawSlowMotionCircle(Vector2 center, int framesLeft, int totalFrames)
@@ -55,162 +67,208 @@ void DrawSlowMotionCircle(Vector2 center, int framesLeft, int totalFrames)
 
 
 // Windowsアプリでのエントリーポイント(main関数)
-int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
+int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int)
+{
+    Novice::Initialize(kWindowTitle, 1280, 720);
 
-	// ライブラリの初期化
-	Novice::Initialize(kWindowTitle, 1280, 720);
+    Player player;
+    TrainingDummy trainingDummy;
+    GameScene scene = GameScene::Title;
 
-	Player player;
-	player.LoadTextures();
-	TrainingDummy trainingDummy;
-	bool isTrainingDummyActive = false;
-	constexpr int kSlowMotionFrame = 300;
-	constexpr int kWorldStep = 4;
-	int slowMotiomLeft = 0;
+    const Vector2 dummyStart = { 800.0f, 440.0f };
+    bool isTrainingDummyActive = false;
+    bool isRunning = true;
 
+    constexpr int kSlowMotionFrame = 300;
+    constexpr int kWorldStep = 4;
+    int slowMotionLeft = 0;
 
-	player.Initialize();
-	trainingDummy.Initialize({ 800.0f, 440.0f });
+    char keys[256] = {};
+    char preKeys[256] = {};
 
+    // 画像はゲーム起動時に1回だけ読み込む
+    player.LoadTextures();
 
-	// キー入力結果を受け取る箱
-	char keys[256] = {0};
-	char preKeys[256] = {0};
+    // タイトルから開始するときと、リトライするときに使う
+    auto startStage = [&](GameScene nextScene)
+        {
+            player.Initialize();
+            trainingDummy.Initialize(dummyStart);
+            slowMotionLeft = 0;
+            isTrainingDummyActive = (nextScene == GameScene::BossBattle);
+            scene = nextScene;
+        };
 
-	// ウィンドウの×ボタンが押されるまでループ
-	while (Novice::ProcessMessage() == 0) {
-		// フレームの開始
-		Novice::BeginFrame();
+    while (isRunning && Novice::ProcessMessage() == 0)
+    {
+        Novice::BeginFrame();
 
-		// キー入力を受け取る
-		memcpy(preKeys, keys, 256);
-		Novice::GetHitKeyStateAll(keys);
+        std::memcpy(preKeys, keys, sizeof(keys));
+        Novice::GetHitKeyStateAll(keys);
 
-		///
-		/// ↓更新処理ここから
-		///
-		
-		player.DebugGui();
+        const bool enterPressed = keys[DIK_RETURN] && !preKeys[DIK_RETURN];
+        const bool escapePressed = keys[DIK_ESCAPE] && !preKeys[DIK_ESCAPE];
+        const bool bossPressed = keys[DIK_B] && !preKeys[DIK_B];
+        const bool retryPressed = keys[DIK_R] && !preKeys[DIK_R];
+
+        if (scene == GameScene::Title)
+        {
+            Novice::ScreenPrintf(550, 250, "BOSS BATTLE");
+            Novice::ScreenPrintf(500, 330, "ENTER : Training Room");
+            Novice::ScreenPrintf(500, 360, "B     : Boss Battle");
+            Novice::ScreenPrintf(500, 390, "ESC   : Quit");
+
+            if (enterPressed)
+            {
+                startStage(GameScene::Training);
+            }
+            else if (bossPressed)
+            {
+                startStage(GameScene::BossBattle);
+            }
+            else if (escapePressed)
+            {
+                isRunning = false;
+            }
+        }
+        else if (scene == GameScene::Victory || scene == GameScene::Defeat)
+        {
+            const bool won = (scene == GameScene::Victory);
+            const unsigned int background = won ? 0x16382CFF : 0x381B24FF;
+
+            Novice::DrawBox(0, 0, 1280, 720, 0.0f, background, kFillModeSolid);
+            Novice::ScreenPrintf(570, 270, won ? "VICTORY!" : "GAME OVER");
+            Novice::ScreenPrintf(510, 350, "R     : Retry");
+            Novice::ScreenPrintf(510, 380, "ENTER : Back to Title");
+
+            if (retryPressed)
+            {
+                startStage(GameScene::BossBattle);
+            }
+            else if (enterPressed || escapePressed)
+            {
+                scene = GameScene::Title;
+            }
+        }
+        else
+        {
+            // Training と BossBattle で共通のプレイヤー処理
+            player.DebugGui();
 
 #ifdef USE_IMGUI
-		ImGui::Begin("Training Dummy Debug");
+            if (scene == GameScene::Training)
+            {
+                ImGui::Begin("Training Dummy Debug");
 
-		if (!isTrainingDummyActive)
-		{
-			if (ImGui::Button("Spawn Dummy"))
-			{
-				trainingDummy.Initialize({ 800.0f, 440.0f });
-				isTrainingDummyActive = true;
-			}
-		}
-		else
-		{
-			if (ImGui::Button("Reset Dummy"))
-			{
-				trainingDummy.Initialize({ 800.0f, 440.0f });
-			}
+                if (!isTrainingDummyActive)
+                {
+                    if (ImGui::Button("Spawn Dummy"))
+                    {
+                        trainingDummy.Initialize(dummyStart);
+                        isTrainingDummyActive = true;
+                    }
+                }
+                else
+                {
+                    if (ImGui::Button("Reset Dummy"))
+                    {
+                        trainingDummy.Initialize(dummyStart);
+                    }
 
-			if (ImGui::Button("Delete Dummy"))
-			{
-				isTrainingDummyActive = false;
-			}
-		}
+                    if (ImGui::Button("Delete Dummy"))
+                    {
+                        isTrainingDummyActive = false;
+                    }
+                }
 
-		ImGui::Text(
-			"Active: %s",
-			isTrainingDummyActive ? "Yes" : "No"
-		);
-
-		ImGui::End();
+                ImGui::Text("Active: %s", isTrainingDummyActive ? "Yes" : "No");
+                ImGui::End();
+            }
 #endif
 
+            // ジャスト回避とスローモーション
+            if (player.ConsumePerfectDodge())
+            {
+                slowMotionLeft = kSlowMotionFrame;
+            }
 
-		if (player.ConsumePerfectDodge())
-		{
-			slowMotiomLeft = kSlowMotionFrame;
-		}
-		const bool isSlowMotion = slowMotiomLeft > 0;
-		const float worldSpeed = isSlowMotion ? 1.0f / static_cast<float>(kWorldStep) : 1.0f;
-		const bool updateWorld = !isSlowMotion || ((kSlowMotionFrame - slowMotiomLeft) % kWorldStep == 0);
+            const bool isSlowMotion = slowMotionLeft > 0;
+            const float worldSpeed =
+                isSlowMotion ? 1.0f / static_cast<float>(kWorldStep) : 1.0f;
+            const bool updateWorld =
+                !isSlowMotion || (kSlowMotionFrame - slowMotionLeft) % kWorldStep == 0;
 
-		player.Update(keys, preKeys, worldSpeed, updateWorld);
-		
-		if (isTrainingDummyActive)
-		{
-			if (updateWorld)
-			{
-				trainingDummy.Update();
-			}
-			if (player.CheckHammerHit(trainingDummy.GetPosition(), trainingDummy.GetSize()))
-			{
-				if (trainingDummy.IsArmorBreak())
-				{
-					if (trainingDummy.DamageBody(player.GetHammerDamage(3)))
-					{
-						player.HealFromHammerHit();
-					}
-				}
-				else
-				{
-					trainingDummy.DamageArmor(player.GetHammerDamage(10));
-				}
-			}
-			if (player.CheckBulletHit(trainingDummy.GetPosition(), trainingDummy.GetSize()))
-			{
-				if (trainingDummy.IsArmorBreak())
-				{
-					trainingDummy.DamageBody(25);
-				}
-				else
-				{
-					trainingDummy.DamageArmor(3);
-				}
-			}
-		}
-	
+            player.Update(keys, preKeys, worldSpeed, updateWorld);
 
+            // 当たり判定
+            if (isTrainingDummyActive)
+            {
+                if (updateWorld)
+                {
+                    trainingDummy.Update();
+                }
 
+                const Vector2 targetPos = trainingDummy.GetPosition();
+                const Vector2 targetSize = trainingDummy.GetSize();
 
+                if (player.CheckHammerHit(targetPos, targetSize))
+                {
+                    if (trainingDummy.IsArmorBreak())
+                    {
+                        if (trainingDummy.DamageBody(player.GetHammerDamage(3)))
+                        {
+                            player.HealFromHammerHit();
+                        }
+                    }
+                    else
+                    {
+                        trainingDummy.DamageArmor(player.GetHammerDamage(10));
+                    }
+                }
 
-		///
-		/// ↑更新処理ここまで
-		///
+                if (player.CheckBulletHit(targetPos, targetSize))
+                {
+                    if (trainingDummy.IsArmorBreak())
+                    {
+                        trainingDummy.DamageBody(25);
+                    }
+                    else
+                    {
+                        trainingDummy.DamageArmor(3);
+                    }
+                }
 
-		///
-		/// ↓描画処理ここから
-		///
-		
-		if (isTrainingDummyActive)
-		{
-			trainingDummy.Draw();
-		}
+                trainingDummy.Draw();
+            }
 
-		player.Draw();
+            player.Draw();
+            Novice::DrawLine(0, 600, 1280, 600, WHITE);
+            DrawSlowMotionCircle(player.GetCenter(), slowMotionLeft, kSlowMotionFrame);
 
-		Novice::DrawLine(0, 600, 1280, 600, WHITE	);
+            if (slowMotionLeft > 0)
+            {
+                Novice::ScreenPrintf(20, 80, "Slow motion: %d", slowMotionLeft);
+                --slowMotionLeft;
+            }
 
-		DrawSlowMotionCircle(player.GetCenter(), slowMotiomLeft, kSlowMotionFrame);
+            // 勝敗判定はボス戦だけ
+            if (scene == GameScene::BossBattle && player.IsDead())
+            {
+                scene = GameScene::Defeat;
+            }
+            else if (scene == GameScene::BossBattle && trainingDummy.IsDefeated())
+            {
+                scene = GameScene::Victory;
+            }
+            else if (escapePressed)
+            {
+                scene = GameScene::Title;
+            }
+        }
 
+        Novice::EndFrame();
+    }
 
-		///
-		/// ↑描画処理ここまで
-		///
-
-		// フレームの終了
-		if (slowMotiomLeft > 0)
-		{
-			Novice::ScreenPrintf(20, 80, "slow motton: %d", slowMotiomLeft);
-			slowMotiomLeft--;
-		}
-		Novice::EndFrame();
-
-		// ESCキーが押されたらループを抜ける
-		if (preKeys[DIK_ESCAPE] == 0 && keys[DIK_ESCAPE] != 0) {
-			break;
-		}
-	}
-
-	// ライブラリの終了
-	Novice::Finalize();
-	return 0;
+    Novice::Finalize();
+    return 0;
 }
