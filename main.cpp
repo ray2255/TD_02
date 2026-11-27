@@ -44,16 +44,8 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 		///
 		/// ↓更新処理ここから
 		///
-		if (keys[DIK_B] && preKeys[DIK_B] == 0) {
-			enemy.Attack(EnemyAtteck::bite);
-		}
-		if (keys[DIK_V] && preKeys[DIK_V] == 0) {
-			enemy.Attack(EnemyAtteck::Tellslam);
-		}
-		if (keys[DIK_N] && preKeys[DIK_N] == 0) {
-			enemy.Attack(EnemyAtteck::Rush);
-		}
-
+		
+		
 		// Enemy更新
 		enemy.Update();
 		///

@@ -153,76 +153,74 @@ void Enemy::Attack(EnemyAtteck attack) {
 
 	// クールダウン開始
 	attackCooldown_.Start();
+
 }
 
 void Enemy::Draw() const {
-
-	for (int i = 10; i <= 12; ++i) {
-
-		Novice::DrawSprite(
-			(int)parts_[i].position.x,
-			(int)parts_[i].position.y,
-			parts_[i].bodyTexture,
-			1.0f, 1.0f,
-			parts_[i].angle,
-			0xFFFFFFFF
-		);
-		Novice::DrawSprite(
-			(int)parts_[i].position.x,
-			(int)parts_[i].position.y,
-			parts_[i].armorTexture,
-			1.0f, 1.0f,
-			parts_[i].angle,
-			0xFFFFFFFF
-		);
-
-
-
-	}
-	Novice::DrawSprite(
-		(int)parts_[13].position.x,
-		(int)parts_[13].position.y,
-		parts_[13].bodyTexture,
-		1.0f, 1.0f,
-		parts_[13].angle,
-		0xFFFFFFFF
-	);
-	Novice::DrawSprite(
-		(int)parts_[13].position.x,
-		(int)parts_[13].position.y,
-		parts_[13].armorTexture,
-		1.0f, 1.0f,
-		parts_[13].angle,
-		0xFFFFFFFF
-	);
+	// 描画したい順番に番号を並べる（奥にしたい10〜13を先に書く）
+	const int drawOrder[kbossparts] = {
+		10, 11, 13,
+		0, 1, 2, 3, 4, 5, 6, 7, 8, 9,12,14,15 // ※kbosspartsの数に合わせて残りを並べる
+	};
 
 	for (int i = 0; i < kbossparts; ++i) {
-		if (i == 13 ||i==10||i==11|| !parts_[i].isAlive) {
+		int index = drawOrder[i];
+
+		if (!parts_[index].isAlive) {
 			continue;
 		}
 
+		// 本体
 		Novice::DrawSprite(
-			(int)parts_[i].position.x,
-			(int)parts_[i].position.y,
-			parts_[i].bodyTexture,
+			(int)parts_[index].position.x,
+			(int)parts_[index].position.y,
+			parts_[index].bodyTexture,
 			1.0f, 1.0f,
-			parts_[i].angle,
-			0xFFFFFFFF
-		);
-		Novice::DrawSprite(
-			(int)parts_[i].position.x,
-			(int)parts_[i].position.y,
-			parts_[i].armorTexture,
-			1.0f, 1.0f,
-			parts_[i].angle,
+			parts_[index].angle,
 			0xFFFFFFFF
 		);
 
+		// 装甲（耐久値が残っているときだけ描画）
+		if (parts_[index].armorHp > 0) {
+			Novice::DrawSprite(
+				(int)parts_[index].position.x,
+				(int)parts_[index].position.y,
+				parts_[index].armorTexture,
+				1.0f, 1.0f,
+				parts_[index].angle,
+				0xFFFFFFFF
+			);
+		}
 	}
 }
 
 void Enemy::Update() {
 	attackCooldown_.Update();
+
+	//////////////////////////////////////////////////////////////
+	// キー入力結果を受け取る箱
+	char keys[256] = { 0 };
+	char preKeys[256] = { 0 };
+	Novice::GetHitKeyStateAll(keys);
+	// デバッグ用：Aキーを押した瞬間に 0番の装甲耐久値を 0 にする
+	if (keys[DIK_A] && preKeys[DIK_A] == 0) {
+		parts_[0].armorHp = 0;
+	}
+	if (keys[DIK_B] && preKeys[DIK_B] == 0) {
+		Attack(EnemyAtteck::bite);
+	}
+	if (keys[DIK_V] && preKeys[DIK_V] == 0) {
+		Attack(EnemyAtteck::Tellslam);
+	}
+	if (keys[DIK_N] && preKeys[DIK_N] == 0) {
+		Attack(EnemyAtteck::Rush);
+	}
+
+
+
+	////////////////////////////////////////////////
+
+
 
 	// 1. 先に「ローカル座標・角度」を更新する
 	if (state_ != EnemyState::Attack) {
@@ -257,10 +255,11 @@ void Enemy::Update() {
 		attackTimer_ += 0.02f;
 
 		switch (currentAttack_) {
+		////////////////////////////////
+		//☆噛みつき
+		////////////////////////////////
 		case EnemyAtteck::bite:
-			// ※「元の位置」は変えず、後ろの「* 数字（伸びる幅）」を大きくする！
-			// ※ 3.0f を (float)M_PI にすると、終わった瞬間にピッタリ元の位置に着地します
-
+			
 			// 1. 首の根元を少し左下に伸ばす
 			parts_[1].localPosition.x = parts_[1].baseLocalPosition.x + sinf(attackTimer_ * (float)M_PI) * 40.0f;
 			parts_[1].localPosition.y = parts_[1].baseLocalPosition.y + sinf(attackTimer_ * (float)M_PI) * 25.0f;
@@ -296,9 +295,11 @@ void Enemy::Update() {
 			break;
 
 
-
+		////////////////////////////////
+		//尻尾攻撃
+		////////////////////////////////
 		case EnemyAtteck::Tellslam: 
-			
+		
 			parts_[5].localAngle = sinf(attackTimer_ * speed * (float)M_PI) * -0.30f;
 			parts_[6].localAngle = sinf(attackTimer_ * speed * (float)M_PI - 0.4f) * -0.34f;
 			parts_[7].localAngle = sinf(attackTimer_ * speed * (float)M_PI - 0.8f) * -0.38f;
@@ -315,7 +316,9 @@ void Enemy::Update() {
 			}
 
 			break;
-		
+			////////////////////////////////
+			//☆突撃
+			////////////////////////////////
 		case EnemyAtteck::Rush: 
 
 			float rushTime = attackTimer_ - 0.4f;

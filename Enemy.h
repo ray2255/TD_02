@@ -45,7 +45,7 @@ struct BossParts
 	bool isWeakPoint ; // 頭などの急所フラグ（必要なら）
 
 };
-const int kbossparts = 14;//ボスの部位
+const int kbossparts = 16;//ボスの部位
 class Enemy
 {
 public:
